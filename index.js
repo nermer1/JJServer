@@ -28,5 +28,9 @@ router.post('/type/:id', (req, res) => {
     res.send(req.query);
 });
 
+const serverProperty = ServerProperty.getInstance();
+
+console.log(serverProperty.getServerPort());
+
 const port = ServerProperty.getInstance().getString('PROD_PORT') || 4000;
-app.listen(port, () => console.log(`Listening on port ${port}`));
+//app.listen(port, () => console.log(`Listening on port ${port}`));

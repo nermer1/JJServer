@@ -9,6 +9,9 @@ const ServerProperty = function() {
         return {
             getString: function(key) {
                 return process.env[key];
+            },
+            getServerPort: function() {
+                return this.getString('PROD_PORT');
             }
         }
     }
