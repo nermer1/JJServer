@@ -2,59 +2,59 @@
 
 ## 설치
 
-* eslint
+### eslint
 
-### install
+* install
 ```text
 npm install --save-dev eslint
 ```
 
-### init
+* init
 ```text
 npm init @eslint/config
 ```
 
-* typescript
+### typescript
 
-### install
+* install
 ```text
 npm install --save-dev typescript
 ```
 
-### init
+* init
 ```text
 tsc --init
 ```
 
 create tsconfig.json
 
-* prettier
+### prettier
 
-### install
+* install
 ```text
 npm install --save-dev --save-exact prettier
 ```
 
-### eslint-config-prettier install
+* eslint-config-prettier install
 ```text
 npm install --save-dev eslint-config-prettier
 ```
 
-* express
+### express
 
 typescript project
 
-### install
+* install
 ```text
 npm install --save @types/express
 ```
 
 
-* cors
+### cors
 
 typescript project
 
-### install
+* install
 ```text
 npm install --save @types/cors
 ```
