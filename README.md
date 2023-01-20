@@ -1,6 +1,6 @@
 # JJServer
 
 ## 설치
-```javascript
+```text
 npm install --save-dev eslint
 ```
