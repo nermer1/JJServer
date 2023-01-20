@@ -5,10 +5,13 @@ const app = express(); */
 
 import express from 'express';
 import cors from 'cors';
-import ServerProperty from './src/test.js';
+import ServerProperty from './src/properties/ServerProperty.js';
+import db from './src/db.js';
 
 const app = express();
 const router = express.Router();
+
+db.connect();
 
 app.use(cors());
 app.use(express.json());
@@ -28,9 +31,5 @@ router.post('/type/:id', (req, res) => {
     res.send(req.query);
 });
 
-const serverProperty = ServerProperty.getInstance();
-
-console.log(serverProperty.getServerPort());
-
-const port = ServerProperty.getInstance().getString('PROD_PORT') || 4000;
+const port = ServerProperty.getServerPort();
 //app.listen(port, () => console.log(`Listening on port ${port}`));

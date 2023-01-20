@@ -12,6 +12,9 @@ const ServerProperty = function() {
             },
             getServerPort: function() {
                 return this.getString('PROD_PORT');
+            },
+            getDBHost: function() {
+                return this.getString('PROD_DB_HOST');
             }
         }
     }
@@ -24,4 +27,4 @@ const ServerProperty = function() {
     }
 }
 
-export default ServerProperty();
+export default ServerProperty().getInstance();
