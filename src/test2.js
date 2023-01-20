@@ -1,4 +1,4 @@
-export function abc() {
+/* export function abc() {
     console.log(123);
 }
 
@@ -14,4 +14,16 @@ let asdfasdfasdf = function() {
     console.log('????');
 }
 
+let abbb = function() {
+    
+}
+
+export function abc() {
+
+}
+
+
+
 export default asdfasdfasdf;
+
+ */
