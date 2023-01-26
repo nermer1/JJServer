@@ -2,7 +2,7 @@ import env from 'dotenv';
 
 env.config();
 
-const ServerProperty = function() {
+/* const ServerProperty = function() {
     let instance: ServerProperty;
 
     function init(): ServerProperty {
@@ -28,4 +28,33 @@ const ServerProperty = function() {
     }
 }
 
-export default ServerProperty().getInstance();
+export default ServerProperty().getInstance(); */
+
+class ServerProperty implements IProperty {
+    private static instance: ServerProperty;
+
+    private constructor() {}
+
+    public getString(key: string): string {
+        let value = process.env[key];
+        return (!value)? '' : value;
+    }
+
+    public getServerPort(): string {
+        return this.getString('PROD_PORT');
+    }
+
+    public getDBHost(): string {
+        return this.getString('PROD_DB_HOST');
+    }
+
+    public static getInstance() {
+        if(!this.instance) {
+            this.instance = new this();
+        }
+
+        return this.instance;
+    }
+}
+
+export default ServerProperty.getInstance();

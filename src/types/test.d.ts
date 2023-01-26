@@ -1,7 +1,5 @@
-interface ServerProperty {
+interface IProperty {
     getString(key: string): string;
-    getServerPort(): string;
-    getDBHost(): string;
 }
 
 interface MongooseOption {
