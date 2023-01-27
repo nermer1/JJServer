@@ -46,7 +46,7 @@ typescript project
 
 * install
 ```text
-npm install --save @types/express
+npm install --save-dev @types/express
 ```
 
 
@@ -56,5 +56,5 @@ typescript project
 
 * install
 ```text
-npm install --save @types/cors
+npm install --save-dev @types/cors
 ```
