@@ -4,8 +4,6 @@ import env from "dotenv";
 //env.config({path: "./config/server/.env"});
 
 // .env 프로퍼티 속성 제어
-
-// cast 헬퍼라는데
 // 
 
 /* const cast = (key, type, defaultValue) => {
