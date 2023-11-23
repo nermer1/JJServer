@@ -1,5 +1,7 @@
 import {Request, Response, NextFunction} from 'express';
 import fs from 'fs';
+import {Server} from 'http';
+import {Socket} from 'socket.io';
 import parser from 'xml-js';
 
 const companycomputer: Tt = {};
@@ -12,11 +14,8 @@ const service = {
             return arr;
         }, []);
     },
-    getHyperVUpdate: (req: Request, res: Response) => {
-        const socket = req.app.get('socketio');
-        const data = req.query as ObjType;
+    getHyperVUpdate: (socket: Socket, data: ObjType) => {
         setCompanyInfo(data);
-
         socket.to('hyperv-session').emit('sessionData', service.getHypervStatus());
     }
 };

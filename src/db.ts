@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
-import ServerProperty from './properties/ServerProperty.js';
+import {basicProperty} from './properties/ServerProperty.js';
 
 export default {
     connect: () => {
         mongoose.set('strictQuery', false);
         mongoose
-            .connect(ServerProperty.getDBHost(), {useNewUrlParser: true, useUnifiedTopology: true} as MongooseOption)
+            .connect(basicProperty.db.host, {useNewUrlParser: true, useUnifiedTopology: true} as MongooseOption)
             .then(() => console.log('sucess'))
             .catch((e) => console.error(e));
         /* mongoose.connect(ServerProperty.getDBHost(), {

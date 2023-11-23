@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import ServerProperty from './src/properties/ServerProperty.js';
+import {basicProperty} from './src/properties/ServerProperty.js';
 import {createServer} from 'http';
 import {Server} from 'socket.io';
 import {router} from './src/router/router.js';
@@ -30,11 +30,14 @@ socketServer.on('connection', function (socket: any) {
 });
 
 // 스케줄러 실행 관련
-//scheduleManger.init();
+scheduleManger.init();
 
-const port = ServerProperty.getServerPort();
+const port = basicProperty.server.port;
 
-httpServer.listen(port, () => console.log(`Listening on port ${port}`));
+httpServer.listen(port, () => {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    console.log(`Listening on port ${port}`);
+});
 httpServer.on('close', () => {
     console.log('server down');
     scheduleManger.close();

@@ -69,53 +69,46 @@ class Property implements IProperty {
  *
  */
 class ServerProperty extends Property {
-    private static uniPostCipher: UniPostCipher;
+    private uniPostCipher: UniPostCipher;
     private static instance: ServerProperty;
     public static path = 'config/server/';
 
     private constructor() {
         super(ServerProperty.path);
-        ServerProperty.uniPostCipher = new UniPostCipher(this.getString('KEY_AES_CONST_HIDDEN', ''), this.getString('KEY_AES_IV_CONST_HIDDEN', ''));
+        this.uniPostCipher = new UniPostCipher(this.getString('KEY_AES_CONST_HIDDEN', ''), this.getString('KEY_AES_IV_CONST_HIDDEN', ''));
     }
 
-    public static getServerPort() {
-        return this.getInstance().getString('PROD_PORT', '3000');
+    public getProperty() {
+        return {
+            server: {
+                port: this.getString('PROD_PORT', '3000')
+            },
+            db: {
+                user: this.getString('DB_HOST'),
+                password: this.getString('DB_USER'),
+                host: this.getString('DB_PASSWORD')
+            },
+            smtp: {
+                user: this.getDecyptProperty(this.getString('SMTP_USER')),
+                password: this.getDecyptProperty(this.getString('SMTP_PASS')),
+                port: this.getNumber('SMTP_PORT'),
+                host: this.getString('SMTP_HOST')
+            },
+            selenium: {
+                support: {
+                    user: this.getDecyptProperty(this.getString('SELENIUM_SUPPORT_USER')),
+                    password: this.getDecyptProperty(this.getString('SELENIUM_SUPPORT_PASS'))
+                },
+                portal: {
+                    user: this.getDecyptProperty(this.getString('SELENIUM_PORTAL_USER')),
+                    password: this.getDecyptProperty(this.getString('SELENIUM_PORTAL_PASS'))
+                }
+            }
+        };
     }
 
-    public static getDBHost() {
-        return this.getInstance().getString('PROD_DB_HOST');
-    }
-
-    public static getSMTPHost() {
-        return this.getInstance().getString('SMTP_HOST');
-    }
-
-    public static getSMTPPort() {
-        return this.getInstance().getString('SMTP_PORT');
-    }
-
-    public static getSMTPUser() {
-        return this.uniPostCipher.decrypt(this.getInstance().getString('SMTP_USER'));
-    }
-
-    public static getSMTPPass() {
-        return this.uniPostCipher.decrypt(this.getInstance().getString('SMTP_PASS'));
-    }
-
-    public static getSupportUser() {
-        return this.uniPostCipher.decrypt(this.getInstance().getString('SELENIUM_SUPPORT_USER'));
-    }
-
-    public static getSupportPass() {
-        return this.uniPostCipher.decrypt(this.getInstance().getString('SELENIUM_SUPPORT_PASS'));
-    }
-
-    public static getPortalUser() {
-        return this.uniPostCipher.decrypt(this.getInstance().getString('SELENIUM_PORTAL_USER'));
-    }
-
-    public static getPortalPass() {
-        return this.uniPostCipher.decrypt(this.getInstance().getString('SELENIUM_PORTAL_PASS'));
+    private getDecyptProperty(encryptProperty: string) {
+        return this.uniPostCipher.decrypt(encryptProperty);
     }
 
     public static getInstance() {
@@ -127,4 +120,7 @@ class ServerProperty extends Property {
     }
 }
 
-export default ServerProperty.getInstance();
+const extenalProperty = ServerProperty.getInstance();
+const basicProperty = ServerProperty.getInstance().getProperty();
+
+export {extenalProperty, basicProperty};

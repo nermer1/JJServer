@@ -6,10 +6,10 @@ const controller = {
         res.json({data: hypervService.getHypervStatus()});
     },
     getHyperVUpdate: (req: Request, res: Response) => {
-        hypervService.getHyperVUpdate(req, res);
-        res.json({
-            success: true
-        });
+        const socket = req.app.get('socketio');
+        const data = req.query as ObjType;
+        hypervService.getHyperVUpdate(socket, data);
+        res.json({success: true});
     }
 };
 

@@ -9,10 +9,12 @@ import licenseService from '../service/licenseService.js';
 
 const controller = {
     getEncryptText: (req: Request, res: Response) => {
-        res.json({data: licenseService.getEncryptText(req)});
+        const {cryptoText} = req.body;
+        res.json({data: licenseService.getEncryptText(cryptoText)});
     },
     getDecryptText: (req: Request, res: Response) => {
-        res.json({data: licenseService.getDecryptText(req)});
+        const {cryptoText} = req.body;
+        res.json({data: licenseService.getDecryptText(cryptoText)});
     },
     getLicenseFile: async (req: Request, res: Response) => {
         /**
