@@ -1,15 +1,67 @@
-import jjUtil from '../utils/JJUtils.js';
-import {createRequire} from 'module';
-import JJMail from '../mail/sendMail.js';
+import {jjUtil} from '../utils/JJUtils.js';
 import {basicProperty} from '../properties/ServerProperty.js';
 import {axiosCall} from '../modules/httpClient/httpClient.js';
-import {webdriver} from '../selenium/driver.js';
-const require = createRequire(import.meta.url);
-const {By, until} = require('selenium-webdriver');
+import {webdriver, sendMail, Key, By, until} from './subscriptionGroupManager.js';
 
-let isTest = true;
-let isWeb = true;
-let isSendMail = true;
+const isWeb = true;
+const isTest = true;
+
+const date = {
+    from: jjUtil.dateUtil.formatDate(new Date(new Date().setDate(new Date().getDate() - 60)), 'yyyy-MM-dd'),
+    to: jjUtil.dateUtil.formatDate(jjUtil.dateUtil.getLastFridayOfLastWeek(), 'yyyy-MM-dd')
+};
+
+const params: UnipostSelelniumParams = {
+    mail: {
+        send: '유니포스트 구독팀 <permes@unipost.co.kr>',
+        receiver: isTest ? 'permes@unipost.co.kr' : 'webhelp@unipost.co.kr',
+        subject: '[유니포스트] 구독팀 서포트 미처리 내역 확인',
+        mustache: 'remainingSupportTemplate',
+        data: {
+            DATE: `${date.from} ~ ${date.to}`,
+            INFO_DATA: []
+        }
+    },
+    driver: {
+        front: {
+            url: 'https://114.unipost.co.kr:8543',
+            id: basicProperty.selenium.support.user,
+            pass: basicProperty.selenium.support.password
+        },
+        end: {
+            url: 'https://114.unipost.co.kr:8543/admin/request/requestSearch.do',
+            data: {
+                searchDateType: 'R',
+                startDate: date.from,
+                endDate: date.to,
+                cmIdx: '',
+                memIdx: 1423,
+                memDiv: 'U',
+                loginDataOnly: 'N',
+                customerName: 'A',
+                customerNameText: '',
+                customerNameExcept: false,
+                receiptInfo: 'A',
+                receiptInfoText: '',
+                requestInfo: 'A',
+                requestInfoText: '',
+                unidocuPart: 'Z',
+                processSalesStatus: 'Z',
+                processKindAll: 'Z',
+                processKind_A: 'A',
+                processKind_B: 'B',
+                processKind_C: 'C',
+                processKind_D: 'D',
+                processKind_E: 'E',
+                // 처리상태
+                progression_R: 'R', // 확인요청
+                progression_E: 'E', // 테스트 요청
+                progression_C: 'C',
+                progression_N: 'N'
+            }
+        }
+    }
+};
 
 function aaaaa(date1: Date) {
     const lastDate = new Date(date1);
@@ -22,7 +74,7 @@ function aaaaa(date1: Date) {
 }
 
 const run = async () => {
-    const driver = await webdriver('https://114.unipost.co.kr:8543');
+    const driver = await webdriver(params.driver.front.url);
 
     try {
         await driver.wait(until.elementLocated(By.id('login-id')), 10000).sendKeys(basicProperty.selenium.support.user);
@@ -32,43 +84,15 @@ const run = async () => {
         const cookies = await driver.manage().getCookies();
 
         axiosCall(
-            'https://114.unipost.co.kr:8543/admin/request/requestSearch.do',
+            params.driver.end.url,
             {
                 headers: {
                     Cookie: cookies.map((cookie: any) => `${cookie.name}=${cookie.value}`).join('; ')
                 },
-                data: {
-                    searchDateType: 'R',
-                    startDate: '2023-10-01',
-                    endDate: '2023-11-03',
-                    cmIdx: '',
-                    memIdx: 1423,
-                    memDiv: 'U',
-                    loginDataOnly: 'N',
-                    customerName: 'A',
-                    customerNameText: '',
-                    customerNameExcept: false,
-                    receiptInfo: 'A',
-                    receiptInfoText: '',
-                    requestInfo: 'A',
-                    requestInfoText: '',
-                    unidocuPart: 'Z',
-                    processSalesStatus: 'Z',
-                    processKindAll: 'Z',
-                    processKind_A: 'A',
-                    processKind_B: 'B',
-                    processKind_C: 'C',
-                    processKind_D: 'D',
-                    processKind_E: 'E',
-                    // 처리상태
-                    progression_R: 'R', // 확인요청
-                    progression_E: 'E', // 테스트 요청
-                    progression_C: 'C',
-                    progression_N: 'N'
-                }
+                data: params.driver.end.data
             },
             (data: any) => {
-                const originalDataArray = data.response
+                params.mail.data.INFO_DATA = data.response
                     .filter((item: any) => {
                         return (
                             aaaaa(item['PROCESS_DATE']) !== 1 &&
@@ -112,16 +136,7 @@ const run = async () => {
                         return item;
                     });
 
-                if (isSendMail) {
-                    console.log('메일 발송! ', originalDataArray);
-                    /* JJMail.sendMailWithMustache(
-                        '유니포스트 구독팀 <permes@unipost.co.kr>',
-                        'permes@unipost.co.kr',
-                        '[유니포스트] 서포트 미처리 내역 확인',
-                        'remainingSupportTemplate',
-                        {TEST: originalDataArray}
-                    ); */
-                }
+                sendMail(params.mail);
             }
         );
     } catch (e) {

@@ -1,7 +1,7 @@
 import DateUtils from '../utils/DateUtils.js';
 
-const util = {
+const jjUtil = {
     dateUtil: DateUtils
 };
 
-export default util;
+export {jjUtil};

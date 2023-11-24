@@ -1,5 +1,5 @@
 <div style="display: grid">
-    <span style="display:block; margin-bottom: 1px;">2023-11-12 ~ 2023-11-17 투입공수 확인 바랍니다.</span>
+    <span style="display:block; margin-bottom: 1px;">{{DATE}} 투입공수 확인 바랍니다.</span>
     <br><table style="border-collapse: collapse; width: 1200px;" border="1">
 
     <tr>
@@ -7,13 +7,13 @@
         <td style="text-align: center;">투입공수(MH/MD)</td>
         <td style="text-align: center;">필요공수(MH/MD)</td>
     </tr>
-    {{#TEST}}
+    {{#INFO_DATA}}
         <tr>
             <td style="text-align: center;">{{MEM_NAME}}</td>
             <td style="text-align: center;">{{ALL_SUM_MH}} / {{ALL_SUM_MD}}</td>
             <td style="text-align: center;">{{NEED_SUM_MH}} / {{NEED_SUM_MD}}</td>
         </tr>
-    {{/TEST}}
+    {{/INFO_DATA}}
     </table>
     <br><span style="display:block; color: #999999; margin-bottom: 1px;">(본 메일은 테스트 메일입니다. 매주 금요일 자동 발송 예정입니다.(아직은 아님))</span>
 </div>

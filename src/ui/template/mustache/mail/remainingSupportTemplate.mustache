@@ -1,5 +1,5 @@
 <div style="display: grid">
-    <span style="display:block; margin-bottom: 1px;">2023-10-01 ~ 2023-11-03 운영 처리 중인 내역 건 한번 더 확인 부탁드립니다.</span>
+    <span style="display:block; margin-bottom: 1px;">{{DATE}} 운영 처리 중인 내역 건 한번 더 확인 부탁드립니다.</span>
     <br><table style="border-collapse: collapse; width: 1200px;" border="1">
 
     <tr>
@@ -11,7 +11,7 @@
         <td style="text-align: center;">접수일자</td>
         <td style="text-align: center;">처리일자</td>
     </tr>
-    {{#TEST}}
+    {{#INFO_DATA}}
         <tr>
             <td style="width: 100px; text-align: center;"><a href="https://114.unipost.co.kr:8543/admin/request/requestDetail.do?SR_IDX={{SR_IDX}}" target="_blank">{{SR_IDX}}</a></td>
             <td>{{REQ_TITLE}}</td>
@@ -21,7 +21,7 @@
             <td style="text-align: center;">{{REQ_DATE}}</td>
             <td style="text-align: center;">{{PROCESS_DATE}}</td>
         </tr>
-    {{/TEST}}
+    {{/INFO_DATA}}
     </table>
     <br><span style="display:block; color: #999999; margin-bottom: 1px;">(본 메일은 테스트 메일입니다. 매주 금요일 자동 발송 예정입니다.(아직은 아님))</span>
 </div>

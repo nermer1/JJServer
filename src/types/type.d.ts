@@ -50,3 +50,30 @@ interface IProperty {
 interface MongooseOption {
     [key: string]: boolean;
 }
+
+interface SeleniumMailParams {
+    send: string;
+    receiver: string;
+    subject: string;
+    mustache: string;
+    data: {
+        [key: string]: string | ObjType[];
+    };
+}
+
+interface SeleniumDriverParams {
+    front: {
+        url: string;
+        id: string;
+        pass: string;
+    };
+    end: {
+        url: string;
+        data: any;
+    };
+}
+
+interface UnipostSelelniumParams {
+    mail: SeleniumMailParams;
+    driver: SeleniumDriverParams;
+}

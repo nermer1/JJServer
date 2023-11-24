@@ -4,7 +4,7 @@ import {basicProperty} from './src/properties/ServerProperty.js';
 import {createServer} from 'http';
 import {Server} from 'socket.io';
 import {router} from './src/router/router.js';
-import scheduleManger from './src/scheduler/hihi.js';
+import scheduleManger from './src/scheduler/mailSendScheduler.js';
 
 //import db from './src/db.js';
 

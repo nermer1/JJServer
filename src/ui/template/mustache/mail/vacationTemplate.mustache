@@ -1,17 +1,17 @@
 <div style="display: grid">
-    <span style="display:block; margin-bottom: 1px;">2023-11-13 금일 휴가자 목록</span>
-    <br><table style="border-collapse: collapse; width: 1200px;" border="1">
+    <span style="display:block; margin-bottom: 1px;">{{DATE}} 오늘의 휴가자 안내드립니다. 업무에 참고바랍니다.</span>
+    <br><table style="border-collapse: collapse; width: 300px;" border="1">
 
     <tr>
-        <td style="text-align: center;">사용</td>
+        <td style="text-align: center;">휴가자</td>
         <td style="text-align: center;">파트</td>
     </tr>
-    {{#TEST}}
+    {{#INFO_DATA}}
         <tr>
             <td style="text-align: center;">{{title}}</td>
             <td style="text-align: center;">{{part}}</td>
         </tr>
-    {{/TEST}}
+    {{/INFO_DATA}}
     </table>
     <br><span style="display:block; color: #999999; margin-bottom: 1px;">(본 메일은 테스트 메일입니다.)</span>
 </div>

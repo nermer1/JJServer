@@ -1,43 +1,66 @@
-import jjUtil from '../utils/JJUtils.js';
-import {createRequire} from 'module';
-import JJMail from '../mail/sendMail.js';
+import {jjUtil} from '../utils/JJUtils.js';
 import {basicProperty} from '../properties/ServerProperty.js';
 import {axiosCall} from '../modules/httpClient/httpClient.js';
-import {webdriver} from '../selenium/driver.js';
-const require = createRequire(import.meta.url);
-const {Builder, By, Key, until} = require('selenium-webdriver');
-const chrome = require('selenium-webdriver/chrome');
+import {webdriver, sendMail, Key, By, until} from './subscriptionGroupManager.js';
 
-let isTest = true;
-let isWeb = true;
-let isSendMail = true;
+const isWeb = true;
+const isTest = false;
+
+const date = {
+    from: jjUtil.dateUtil.formatDate(jjUtil.dateUtil.getMondayOfCurrentWeek(), 'yyyy-MM-dd'),
+    to: jjUtil.dateUtil.formatDate(new Date(), 'yyyy-MM-dd')
+};
+
+const params: UnipostSelelniumParams = {
+    mail: {
+        send: '유니포스트 구독팀 <permes@unipost.co.kr>',
+        receiver: isTest ? 'permes@unipost.co.kr' : 'webhelp@unipost.co.kr',
+        subject: '[유니포스트] 구독팀 금주의 공수 시간 확인',
+        mustache: 'inputTimeSupportTemplate',
+        data: {
+            DATE: `${date.from} ~ ${date.to}`,
+            INFO_DATA: []
+        }
+    },
+    driver: {
+        front: {
+            url: 'https://114.unipost.co.kr:8543',
+            id: basicProperty.selenium.support.user,
+            pass: basicProperty.selenium.support.password
+        },
+        end: {
+            url: 'https://114.unipost.co.kr:8543/admin/request/getLaborInputData.do',
+            data: {
+                endDate: date.to,
+                group_S: 'S',
+                group_W: 'W',
+                searchDateType: 'P',
+                searchType: 'processor',
+                startDate: date.from
+            }
+        }
+    }
+};
 
 const run = async () => {
-    const driver = await webdriver('https://114.unipost.co.kr:8543');
+    const driver = await webdriver(params.driver.front.url);
     try {
-        await driver.wait(until.elementLocated(By.id('login-id')), 10000).sendKeys(basicProperty.selenium.support.user);
-        await driver.wait(until.elementLocated(By.id('password')), 10000).sendKeys(basicProperty.selenium.support.password);
+        await driver.wait(until.elementLocated(By.id('login-id')), 10000).sendKeys(params.driver.front.id);
+        await driver.wait(until.elementLocated(By.id('password')), 10000).sendKeys(params.driver.front.pass);
         await driver.wait(until.elementLocated(By.className('btn_login fid-loginBtn')), 10000).click();
 
         const cookies = await driver.manage().getCookies();
 
         axiosCall(
-            'https://114.unipost.co.kr:8543/admin/request/getLaborInputData.do',
+            params.driver.end.url,
             {
                 headers: {
                     Cookie: cookies.map((cookie: any) => `${cookie.name}=${cookie.value}`).join('; ')
                 },
-                data: {
-                    endDate: '2023-11-18',
-                    group_S: 'S',
-                    group_W: 'W',
-                    searchDateType: 'P',
-                    searchType: 'processor',
-                    startDate: '2023-11-12'
-                }
+                data: params.driver.end.data
             },
             (data: any) => {
-                const originalDataArray = Object.values(
+                params.mail.data.INFO_DATA = Object.values(
                     data.response
                         .filter((item: any) => {
                             if (item['SRP_POS'] === (isWeb ? 'W' : 'S')) return item;
@@ -57,16 +80,7 @@ const run = async () => {
                     item['NEED_SUM_MD'] = (5 - item['ALL_SUM_MD']).toFixed(2);
                     return item;
                 });
-
-                console.log('메일 발송! ', originalDataArray);
-                /* if (isSendMail)
-                    JJMail.sendMailWithMustache(
-                        '유니포스트 구독팀 <permes@unipost.co.kr>',
-                        'permes@unipost.co.kr',
-                        '[유니포스트] 공수 시간 확인',
-                        'inputTimeSupportTemplate',
-                        {TEST: arr}
-                    ); */
+                sendMail(params.mail);
             }
         );
     } catch (e) {

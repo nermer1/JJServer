@@ -2,25 +2,26 @@ import {TaskScheduleManager as schedule} from './TaskScheduleManager.js';
 import mailService from '../service/scheduleSendMailService.js';
 
 /**
- * 서포트 메일 발송 스케줄러
- * 0 0 14 ? * FRI *
+ * 서포트 잔여 일감 메일 발송 스케줄러
+ * 월 - 금 오후 2시 발송
  */
-schedule.add('test', '*/10 * * * * *', () => {
-    console.log('?');
-    // 셀레니움 테스트 - 되는거 확인 이제 로직 수정해야함
+schedule.add('test', '0 0 14 * * 1-5', () => {
     mailService.run1();
 });
 
 /**
- * 휴가자 메일 발송 스케줄러
+ * 서포트 공수 메일 발송 스케줄러
+ * 월 - 금 오후 2시 발송
  */
-schedule.add('test1', '*/10 * * * * *', () => {
-    console.log('!');
+schedule.add('test1', '0 0 14 * * 1-5', () => {
     mailService.run2();
 });
 
-schedule.add('test1', '*/30 * * * * *', () => {
-    console.log('@');
+/**
+ * 휴가자 메일 발송 스케줄러
+ * 월 - 금 오전 9시 발송
+ */
+schedule.add('test2', '0 0 9 * * 1-5', () => {
     mailService.run3();
 });
 
