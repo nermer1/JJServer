@@ -4,46 +4,50 @@ import {axiosCall} from '../modules/httpClient/httpClient.js';
 import {webdriver, sendMail, Key, By, until} from './subscriptionGroupManager.js';
 
 const isWeb = true;
-const isTest = false;
+const isTest = true;
 
-const date = {
-    from: jjUtil.dateUtil.formatDate(jjUtil.dateUtil.getMondayOfCurrentWeek(), 'yyyy-MM-dd'),
-    to: jjUtil.dateUtil.formatDate(new Date(), 'yyyy-MM-dd')
-};
+function getParams() {
+    const date = {
+        from: jjUtil.dateUtil.formatDate(jjUtil.dateUtil.getMondayOfCurrentWeek(), 'yyyy-MM-dd'),
+        to: jjUtil.dateUtil.formatDate(new Date(), 'yyyy-MM-dd')
+    };
 
-const params: UnipostSelelniumParams = {
-    mail: {
-        send: '유니포스트 구독팀 <permes@unipost.co.kr>',
-        receiver: isTest ? 'permes@unipost.co.kr' : 'webhelp@unipost.co.kr',
-        subject: '[유니포스트] 구독팀 금주의 공수 시간 확인',
-        mustache: 'inputTimeSupportTemplate',
-        data: {
-            DATE: `${date.from} ~ ${date.to}`,
-            INFO_DATA: []
-        }
-    },
-    driver: {
-        front: {
-            url: 'https://114.unipost.co.kr:8543',
-            id: basicProperty.selenium.support.user,
-            pass: basicProperty.selenium.support.password
-        },
-        end: {
-            url: 'https://114.unipost.co.kr:8543/admin/request/getLaborInputData.do',
+    return {
+        mail: {
+            send: '유니포스트 구독팀 <permes@unipost.co.kr>',
+            receiver: isTest ? 'permes@unipost.co.kr' : 'webhelp@unipost.co.kr',
+            subject: '[유니포스트] 구독팀 금주의 공수 시간 확인',
+            mustache: 'inputTimeSupportTemplate',
             data: {
-                endDate: date.to,
-                group_S: 'S',
-                group_W: 'W',
-                searchDateType: 'P',
-                searchType: 'processor',
-                startDate: date.from
+                DATE: `${date.from} ~ ${date.to}`,
+                INFO_DATA: []
+            }
+        },
+        driver: {
+            front: {
+                url: 'https://114.unipost.co.kr:8543',
+                id: basicProperty.selenium.support.user,
+                pass: basicProperty.selenium.support.password
+            },
+            end: {
+                url: 'https://114.unipost.co.kr:8543/admin/request/getLaborInputData.do',
+                data: {
+                    endDate: date.to,
+                    group_S: 'S',
+                    group_W: 'W',
+                    searchDateType: 'P',
+                    searchType: 'processor',
+                    startDate: date.from
+                }
             }
         }
-    }
-};
+    };
+}
 
 const run = async () => {
+    const params: UnipostSelelniumParams = getParams();
     const driver = await webdriver(params.driver.front.url);
+
     try {
         await driver.wait(until.elementLocated(By.id('login-id')), 10000).sendKeys(params.driver.front.id);
         await driver.wait(until.elementLocated(By.id('password')), 10000).sendKeys(params.driver.front.pass);
