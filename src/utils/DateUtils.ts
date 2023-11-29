@@ -41,10 +41,13 @@ export default class DateUtils {
         console.log('today', today); // 오늘 날짜
         console.log('dayOfWeek', dayOfWeek); // 2 오늘 화요일
 
-        const difference = dayOfWeek < 5 ? dayOfWeek + 2 : dayOfWeek - 5;
+        // 화요일 < 금요일 ? 화요일 + 2, 화요일 - 5
+        const difference = dayOfWeek < 5 ? dayOfWeek + 2 : dayOfWeek - 5 === 0 ? 7 : 0;
+
+        console.log('difference', difference);
 
         const lastFriday = new Date(today);
-        lastFriday.setDate(today.getDate() - difference - 7);
+        lastFriday.setDate(today.getDate() - difference);
 
         return lastFriday;
     }
