@@ -84,6 +84,7 @@ const run = async () => {
                     item['NEED_SUM_MD'] = (5 - item['ALL_SUM_MD']).toFixed(2);
                     return item;
                 });
+                if (params.mail.data.INFO_DATA.length === 0) params.mail.data['IS_EMPTY'] = true;
                 sendMail(params.mail);
             }
         );

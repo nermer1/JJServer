@@ -137,8 +137,9 @@ const run = async () => {
                                 break;
                         }
                         return item;
-                    });
+                    }) as ObjType[];
 
+                if (params.mail.data.INFO_DATA.length === 0) params.mail.data['IS_EMPTY'] = true;
                 sendMail(params.mail);
             }
         );

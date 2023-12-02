@@ -35,16 +35,9 @@ export default class DateUtils {
 
     public static getLastFridayOfLastWeek() {
         const today = new Date();
-        const dayOfWeek = today.getDay(); // 0은 일요일, 1은 월요일, ..., 6은 토요일
+        const dayOfWeek = today.getDay();
 
-        // 현재 요일에서 금요일까지의 차이 계산
-        console.log('today', today); // 오늘 날짜
-        console.log('dayOfWeek', dayOfWeek); // 2 오늘 화요일
-
-        // 화요일 < 금요일 ? 화요일 + 2, 화요일 - 5
         const difference = dayOfWeek < 5 ? dayOfWeek + 2 : dayOfWeek - 5 === 0 ? 7 : 0;
-
-        console.log('difference', difference);
 
         const lastFriday = new Date(today);
         lastFriday.setDate(today.getDate() - difference);

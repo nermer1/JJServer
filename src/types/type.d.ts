@@ -57,7 +57,7 @@ interface SeleniumMailParams {
     subject: string;
     mustache: string;
     data: {
-        [key: string]: string | ObjType[];
+        [key: string]: string | boolean | ObjType[];
     };
 }
 

@@ -124,6 +124,7 @@ const getVacation = async () => {
                 setVacationList(res1.data.response, 'SAP');
                 setVacationList(res2.data.response, 'WEB');
                 params.mail.data.INFO_DATA = renderUseCalcData(vacationList);
+                if (params.mail.data.INFO_DATA.length === 0) params.mail.data['IS_EMPTY'] = true;
                 sendMail(params.mail);
             })
         );
