@@ -84,9 +84,9 @@ class ServerProperty extends Property {
                 port: this.getString('PROD_PORT', '3000')
             },
             db: {
-                user: this.getString('DB_HOST'),
+                user: this.getString('DB_PASSWORD'),
                 password: this.getString('DB_USER'),
-                host: this.getString('DB_PASSWORD')
+                host: this.getString('DB_HOST')
             },
             smtp: {
                 user: this.getDecyptProperty(this.getString('SMTP_USER')),

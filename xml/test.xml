@@ -49,7 +49,7 @@
 		<value>공소정 매니저</value>
 	</hostname>
 	<hostname>
-		<key>JIWON</key>
+		<key>jiwonpc</key>
 		<value>김지원 매니저</value>
 	</hostname>
 	<hostname>
@@ -63,6 +63,10 @@
 	<hostname>
 		<key>desktop-81arv2f</key>
 		<value>장영훈 매니저</value>
+	</hostname>
+	<hostname>
+		<key>lily</key>
+		<value>조현지 매니저</value>
 	</hostname>
 	<hostname>
 		<key>desktop-8048oop</key>
@@ -79,5 +83,17 @@
 	<hostname>
 		<key>notebook-choh</key>
 		<value>오충환 이사님</value>
+	</hostname>
+	<hostname>
+		<key>LAPTOP-ZENBOOKU</key>
+		<value>강태욱 이사님</value>
+	</hostname>
+	<hostname>
+		<key>unipost-jikim</key>
+		<value>김종일 매니저</value>
+	</hostname>
+	<hostname>
+		<key>boot</key>
+		<value>최초 부팅</value>
 	</hostname>
 </user>
