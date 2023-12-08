@@ -1,53 +1,24 @@
-import mongoose, {Schema} from 'mongoose';
+import {CustomSchema} from './CustomSchema.js';
 
-const UserSchema = new Schema({
-    USER_NAME: {
-        required: true,
-        type: String
-    },
-    USER_BIRTH: {
-        required: true,
-        type: Date
-    },
-    USER_HOSTNAME: {
-        unique: true,
-        type: String
-    },
-    USER_ID: {
-        required: true,
-        type: String
-    },
-    USER_IDX: {
-        required: true,
-        unique: true,
-        type: Number
-    },
-    USER_JOINUS: {
-        type: Date
-    },
-    USER_MAIL: {
-        required: true,
-        unique: true,
-        type: String
-    },
-    USER_NICKNAME: {
-        unique: true,
-        type: String
-    },
-    USER_PHONE: {
-        required: true,
-        unique: true,
-        type: String
-    },
-    USER_POSISTION: {
-        required: true,
-        type: String
-    },
-    USER_ROLE: {
-        required: true,
-        type: String,
-        default: 'basic'
+class UserSchema extends CustomSchema {
+    constructor(schemaName: string, options: {} = {}) {
+        super(schemaName, options);
     }
+}
+
+const Users = new UserSchema('users', {
+    USER_NAME: {required: true, type: String},
+    USER_BIRTH: {type: String},
+    USER_HOSTNAME: {type: String, default: ''},
+    USER_ID: {required: true, type: String},
+    USER_JOINUS: {type: String},
+    USER_MAIL: {required: true, unique: true, type: String},
+    USER_NICKNAME: {type: String},
+    USER_PHONE: {unique: true, type: String},
+    USER_POSISTION: {required: true, type: String},
+    USER_GROUP: {required: true, type: String},
+    USER_ROLE: {required: true, type: String, default: 'basic'},
+    DEL_FLAG: {type: String, default: ''}
 });
 
-export default mongoose.model('users', UserSchema);
+export {Users};

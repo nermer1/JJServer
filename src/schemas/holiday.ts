@@ -1,18 +1,29 @@
-import mongoose, {Schema} from 'mongoose';
+import {CustomSchema} from './CustomSchema.js';
 
-const HolidaySchema = new Schema({
+class HolidaySchema extends CustomSchema {
+    constructor(schemaName: string, options: {} = {}) {
+        super(schemaName, options);
+    }
+}
+
+const Holiday = new HolidaySchema('holiday', {
     title: {
         required: true,
         type: String
     },
     start: {
         required: true,
-        type: Date
+        type: String
     },
     end: {
         required: true,
-        type: Date
+        type: String
+    },
+    type: {
+        required: true,
+        type: String,
+        default: 'H'
     }
 });
 
-export default mongoose.model('users', HolidaySchema);
+export {Holiday};

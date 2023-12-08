@@ -14,6 +14,23 @@ interface ObjType {
     [key: string]: string;
 }
 
+interface ObjAny {
+    [key: string]: any;
+}
+
+type DBNameType = 'holiday' | 'users' | 'userHost';
+
+interface DBDataType {
+    tableData: ObjAny[];
+    stringData: ObjAny;
+}
+
+interface DBParamsType {
+    name: DBNameType;
+    type: string;
+    data: DBDataType;
+}
+
 interface ServerToClientEvents {
     noArg: () => void;
     basicEmit: (a: number, b: string, c: Buffer) => void;

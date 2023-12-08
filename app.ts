@@ -5,8 +5,7 @@ import {createServer} from 'http';
 import {Server} from 'socket.io';
 import {router} from './src/router/router.js';
 import scheduleManger from './src/scheduler/mailSendScheduler.js';
-
-//import db from './src/db.js';
+import db from './src/db.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -16,6 +15,8 @@ app.use(cors());
 app.use(express.json());
 app.use('/', router);
 app.set('socketio', io);
+
+db.connect();
 
 const socketServer = app.get('socketio');
 socketServer.on('connection', function (socket: any) {
