@@ -1,7 +1,7 @@
 import {basicProperty} from '../properties/ServerProperty.js';
 import {webdriver, sendMail, Key, By, until} from './subscriptionGroupManager.js';
 import {axios} from '../modules/httpClient/httpClient.js';
-import {jjUtil} from '../utils/JJUtils.js';
+import {dateUtil} from '../utils/UnietangUtils.js';
 import moment from 'moment-timezone';
 
 const isTest = true;
@@ -18,7 +18,7 @@ function getParams() {
             subject: '[유니포스트] 구독팀 오늘의 휴가자 안내',
             mustache: 'vacationTemplate',
             data: {
-                DATE: jjUtil.dateUtil.formatDate(new Date(), 'yyyy-MM-dd'),
+                DATE: dateUtil.formatDate(new Date(), 'yyyy-MM-dd'),
                 INFO_DATA: []
             }
         },
@@ -34,8 +34,8 @@ function getParams() {
                     coRegno: '',
                     deptId: '',
                     usId: '',
-                    sSdate: jjUtil.dateUtil.formatDate(new Date()),
-                    sEdate: jjUtil.dateUtil.formatDate(new Date()),
+                    sSdate: dateUtil.formatDate(new Date()),
+                    sEdate: dateUtil.formatDate(new Date()),
                     itemIds: [
                         '2673DED180C14058A5492AD0C6593D45',
                         '01A614219FAE435E991B16B84956D5E4',

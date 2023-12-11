@@ -1,4 +1,4 @@
-import {jjUtil} from '../utils/JJUtils.js';
+import {dateUtil} from '../utils/UnietangUtils.js';
 import {basicProperty} from '../properties/ServerProperty.js';
 import {axiosCall} from '../modules/httpClient/httpClient.js';
 import {webdriver, sendMail, Key, By, until} from './subscriptionGroupManager.js';
@@ -8,8 +8,8 @@ const isTest = true;
 
 function getParams() {
     const date = {
-        from: jjUtil.dateUtil.formatDate(jjUtil.dateUtil.getMondayOfCurrentWeek(), 'yyyy-MM-dd'),
-        to: jjUtil.dateUtil.formatDate(new Date(), 'yyyy-MM-dd')
+        from: dateUtil.formatDate(dateUtil.getMondayOfCurrentWeek(), 'yyyy-MM-dd'),
+        to: dateUtil.formatDate(new Date(), 'yyyy-MM-dd')
     };
 
     return {

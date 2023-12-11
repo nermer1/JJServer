@@ -1,4 +1,4 @@
-import {jjUtil} from '../utils/JJUtils.js';
+import {dateUtil} from '../utils/UnietangUtils.js';
 import {basicProperty} from '../properties/ServerProperty.js';
 import {axiosCall} from '../modules/httpClient/httpClient.js';
 import {webdriver, sendMail, Key, By, until} from './subscriptionGroupManager.js';
@@ -8,8 +8,8 @@ const isTest = true;
 
 function getParams() {
     const date = {
-        from: jjUtil.dateUtil.formatDate(new Date(new Date().setDate(new Date().getDate() - 60)), 'yyyy-MM-dd'),
-        to: jjUtil.dateUtil.formatDate(jjUtil.dateUtil.getLastFridayOfLastWeek(), 'yyyy-MM-dd')
+        from: dateUtil.formatDate(new Date(new Date().setDate(new Date().getDate() - 60)), 'yyyy-MM-dd'),
+        to: dateUtil.formatDate(dateUtil.getLastFridayOfLastWeek(), 'yyyy-MM-dd')
     };
 
     return {
@@ -70,8 +70,8 @@ function aaaaa(date1: Date) {
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 7);
 
-    const a = jjUtil.dateUtil.formatDate(lastDate);
-    const b = jjUtil.dateUtil.formatDate(fourteenDaysAgo);
+    const a = dateUtil.formatDate(lastDate);
+    const b = dateUtil.formatDate(fourteenDaysAgo);
     return a.localeCompare(b);
 }
 
