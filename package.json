@@ -6,7 +6,8 @@
     "type": "module",
     "scripts": {
         "dev": "ts-node app.js",
-        "build": "tsc --outDir target/"
+        "build": "webpack",
+        "start": "node dist/main.js"
     },
     "exports": {
         ".": {
@@ -33,6 +34,10 @@
         "npm-check-updates": "^16.14.11",
         "selenium-webdriver": "^4.15.0",
         "socket.io": "^4.7.2",
+        "ts-loader": "^9.5.1",
+        "webpack": "^5.89.0",
+        "webpack-cli": "^5.1.4",
+        "webpack-node-externals": "^3.0.0",
         "xml-js": "^1.6.11"
     },
     "devDependencies": {
