@@ -1,7 +1,7 @@
 import express from 'express';
 import hyperv from '../controller/hypervConnectedController.js';
 import license from '../controller/unidocuLicenseController.js';
-import db from '../controller/dbContoller.js';
+import db from '../controller/apiController.js';
 const router = express.Router();
 
 /**
@@ -18,9 +18,9 @@ router.post('/license/decrypt/text', license.getDecryptText);
 router.post('/license/encrypt/file', license.getLicenseFile);
 
 /**
- * db 관련
+ *
  */
-router.post('/db', db.call);
+router.post('/api/v1', db.call);
 
 export {router};
 
