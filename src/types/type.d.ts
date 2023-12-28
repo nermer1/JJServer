@@ -18,6 +18,10 @@ interface ObjAny {
     [key: string]: any;
 }
 
+interface ObjArr {
+    [key: string]: Array<ObjAny>;
+}
+
 type DBNameType = 'holiday' | 'users' | 'userHost';
 
 interface DBDataType {

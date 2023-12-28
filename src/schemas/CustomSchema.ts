@@ -1,4 +1,5 @@
 import mongoose, {Schema} from 'mongoose';
+import ApiReturn from '../structure/ApiReturn';
 
 export class CustomSchema {
     private schema: Schema;
@@ -21,7 +22,11 @@ export class CustomSchema {
         return this.model.findOneAndUpdate({_id: data.id}, data, {new: true});
     }
 
-    findAll() {
-        return this.model.find({});
+    async findAll() {
+        return await this.model.find({});
+    }
+
+    async getApiReturn(params: DBParamsType): Promise<ApiReturn> {
+        throw new Error('Abstract method must be implemented');
     }
 }

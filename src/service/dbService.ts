@@ -1,5 +1,7 @@
 //import {Request, Response, NextFunction} from 'express';
+import {CustomSchema} from '../schemas/CustomSchema.js';
 import {schemas} from '../schemas/schemaMap.js';
+import ApiReturn from '../structure/ApiReturn.js';
 
 /* params: {
 'dbName': 'holi',
@@ -17,6 +19,21 @@ message: ""
 tableData
 stringData */
 
+/* REQUEST {
+	name : string, ex ) 'Quiz'
+	type : string, ex ) 'C','R','U','D'
+	data : {
+		tableData: any[]
+	}
+}
+
+// TODO 김재현과장 할 것
+RESPONSE {
+ data: {
+		tableData : any[]
+	}
+} */
+
 interface Test {
     returnType: string;
     message: string;
@@ -26,6 +43,17 @@ interface Test {
 
 const service = {
     call: async (params: DBParamsType) => {
+        const schema = schemas[params.name];
+        let apiReturn;
+        try {
+            apiReturn = await schema.getApiReturn(params);
+            apiReturn.setReturnMessage('');
+        } catch (e) {
+            apiReturn?.setReturnMessage(e as any);
+        }
+        return apiReturn;
+    }
+    /* call: async (params: DBParamsType) => {
         let data: Test = {
             returnType: '',
             message: '',
@@ -60,7 +88,7 @@ const service = {
             data.message = err;
         }
         return data;
-    }
+    } */
 };
 
 function checkData(params: DBParamsType) {
