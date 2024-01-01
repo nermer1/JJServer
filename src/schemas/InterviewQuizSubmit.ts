@@ -1,7 +1,7 @@
-import {CustomSchema} from './CustomSchema.js';
+import CommonQuery from './CommonQuery.js';
 
-class InterviewQuizSubmitSchema extends CustomSchema {
-    constructor(schemaName: string, options: {} = {}) {
+class InterviewQuizSubmitSchema extends CommonQuery {
+    constructor(schemaName: string, options = {}) {
         super(schemaName, options);
     }
 }

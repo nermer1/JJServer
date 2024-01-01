@@ -1,8 +1,8 @@
-import {CustomSchema} from './CustomSchema.js';
+import CommonQuery from './CommonQuery.js';
 import {validatorUtil as validator} from '../utils/UnietangUtils.js';
 
-class UserSchema extends CustomSchema {
-    constructor(schemaName: string, options: {} = {}) {
+class UserSchema extends CommonQuery {
+    constructor(schemaName: string, options = {}) {
         super(schemaName, options);
     }
 }

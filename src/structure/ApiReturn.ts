@@ -20,4 +20,12 @@ export default class ApiReturn {
     setReturnMessage(returnMessage: string) {
         this.returnMessage = returnMessage;
     }
+
+    getReturnErrorMessage() {
+        return this.returnErrorMessage;
+    }
+
+    setReturnErrorMessage(returnErrorMessage: string) {
+        this.returnErrorMessage = returnErrorMessage;
+    }
 }

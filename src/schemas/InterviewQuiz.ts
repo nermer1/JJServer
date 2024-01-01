@@ -1,8 +1,8 @@
 import ApiReturn from '../structure/ApiReturn.js';
-import {CustomSchema} from './CustomSchema.js';
+import CommonQuery from './CommonQuery.js';
 
-class InterviewQuizSchema extends CustomSchema {
-    constructor(schemaName: string, options: {} = {}) {
+class InterviewQuizSchema extends CommonQuery {
+    constructor(schemaName: string, options = {}) {
         super(schemaName, options);
     }
 
@@ -14,9 +14,38 @@ class InterviewQuizSchema extends CustomSchema {
                 //
                 break;
             case 'R':
-                const data = await this.findAll();
+                const data = await this.model.aggregate([
+                    {
+                        $lookup: {
+                            from: 'interviewQuizTypes',
+                            localField: 'type',
+                            foreignField: 'type',
+                            as: 'interviewQuiz'
+                        }
+                    },
+                    {
+                        $unwind: '$interviewQuiz'
+                    },
+                    {
+                        $project: {
+                            del: 1,
+                            question: 1,
+                            choice: 1,
+                            passage: 1,
+                            point: 1,
+                            type: '$interviewQuiz.text'
+                        }
+                    },
+                    {
+                        $match: {
+                            del: {
+                                $ne: 'X'
+                            }
+                        }
+                    }
+                ]);
                 apiReturn.put('data', data);
-                apiReturn.setReturnMessage('이거 뜨냐');
+                apiReturn.setReturnMessage('호출 성공');
                 break;
             case 'U':
                 //
@@ -54,6 +83,10 @@ const InterviewQuiz = new InterviewQuizSchema('interviewQuiz', {
     },
     passage: {
         type: String
+    },
+    point: {
+        required: true,
+        type: Number
     },
     type: {
         required: true,

@@ -3,13 +3,15 @@ import {Users} from '../schemas/user.js';
 import {UserHost} from '../schemas/userHost.js';
 import {InterviewQuiz} from './InterviewQuiz.js';
 import {InterviewQuizSubmit} from './InterviewQuizSubmit.js';
+import {InterviewQuizTypes} from './InterviewQuizTypes.js';
 
 const schemas = {
     holiday: Holiday,
     users: Users,
     userHost: UserHost,
     interviewQuiz: InterviewQuiz,
-    interviewQuizSubmit: InterviewQuizSubmit
+    interviewQuizSubmit: InterviewQuizSubmit,
+    interviewQuizTypes: InterviewQuizTypes
 };
 
 export {schemas};

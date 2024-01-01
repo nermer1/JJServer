@@ -1,8 +1,4 @@
-import {Request, Response, NextFunction} from 'express';
-import fs from 'fs';
-import {Server} from 'http';
 import {Socket} from 'socket.io';
-import parser from 'xml-js';
 import {schemas} from '../schemas/schemaMap.js';
 
 const companycomputer: Tt = {};
@@ -16,13 +12,12 @@ const service = {
         }, []);
     },
     getHyperVUpdate: async (socket: Socket, data: ObjType) => {
-        console.log(data);
         await setCompanyInfo(data);
-        console.log('teat', service.getHypervStatus());
         socket.to('hyperv-session').emit('sessionData', service.getHypervStatus());
     }
 };
 
+// 기존 xml
 /* function getHostnameToUserName(key: string) {
     const hostMap = {} as ObjType;
     var xml = fs.readFileSync('./xml/test.xml', {encoding: 'utf-8'});
@@ -35,39 +30,16 @@ const service = {
     return hostMap[key.toLowerCase()] || key;
 } */
 
+// 임시 캐시화
 let hostData: ObjType = {};
 
 async function getHostnameToUserName(key: string) {
     if (Object.keys(hostData).length > 0) return hostData[key.toLowerCase()] || key;
-
-    const userHost = schemas.userHost.model;
-    //const users = schemas.users.model;
-    const data = await userHost.aggregate([
-        {
-            $lookup: {
-                from: 'users', // 조인할 컬렉션명
-                localField: 'USER_ID',
-                foreignField: 'USER_ID',
-                as: 'user_info'
-            }
-        },
-        {
-            $unwind: '$user_info' // 배열을 풀어줌
-        },
-        {
-            $project: {
-                USER_HOST: 1,
-                USER_NAME: '$user_info.USER_NAME' // users 컬렉션에서 가져온 nickname 필드
-            }
-        }
-    ]);
-
-    hostData = data.reduce((a: ObjType, b: any) => {
+    hostData = (await schemas.userHost.getUserHost()).reduce((a: ObjType, b: any) => {
         a[b.USER_HOST] = b.USER_NAME;
         return a;
     }, {});
 
-    console.log('hostData', hostData);
     return hostData[key.toLowerCase()] || key;
 }
 

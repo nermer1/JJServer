@@ -1,5 +1,3 @@
-//import {Request, Response, NextFunction} from 'express';
-import {CustomSchema} from '../schemas/CustomSchema.js';
 import {schemas} from '../schemas/schemaMap.js';
 import ApiReturn from '../structure/ApiReturn.js';
 
@@ -34,61 +32,17 @@ RESPONSE {
 	}
 } */
 
-interface Test {
-    returnType: string;
-    message: string;
-    tableData: any[];
-    stringData: any;
-}
-
 const service = {
     call: async (params: DBParamsType) => {
-        const schema = schemas[params.name];
-        let apiReturn;
         try {
-            apiReturn = await schema.getApiReturn(params);
-            apiReturn.setReturnMessage('');
-        } catch (e) {
-            apiReturn?.setReturnMessage(e as any);
-        }
-        return apiReturn;
-    }
-    /* call: async (params: DBParamsType) => {
-        let data: Test = {
-            returnType: '',
-            message: '',
-            tableData: [],
-            stringData: {}
-        };
-        try {
-            checkData(params);
             const schema = schemas[params.name];
-
-            switch (params.type) {
-                case 'C':
-                    schema.insert(params.data.stringData);
-                    break;
-                case 'R':
-                    data.tableData = await schema.findAll();
-                    break;
-                case 'U':
-                    data.stringData = await schema.update(params.data.stringData);
-                    break;
-                case 'D':
-                    await schema.delete(params.data.stringData.id);
-                    break;
-                default:
-                    break;
-            }
-
-            data.returnType = 'S';
-            data.message = '성공';
-        } catch (err: any) {
-            data.returnType = 'E';
-            data.message = err;
+            return await schema.getApiReturn(params);
+        } catch (e: any) {
+            const apiReturn = new ApiReturn();
+            apiReturn.setReturnErrorMessage(e.message);
+            return apiReturn;
         }
-        return data;
-    } */
+    }
 };
 
 function checkData(params: DBParamsType) {
