@@ -15,23 +15,42 @@ class InterviewQuizSubmitSchema extends CommonSchema {
 
         const schema = this.model;
         schema.aggregate([
-            /* {
+            {
+                $unwind: '$answer'
+            },
+            {
                 $lookup: {
-                    from: 'users', // 조인할 컬렉션명
-                    localField: 'USER_ID',
-                    foreignField: 'USER_ID',
-                    as: 'user_info'
+                    from: 'interviewQuiz',
+                    let: {answerKey: '$answer.key'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ['$_id', {$toObjectId: '$$answerKey'}]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'quizData'
                 }
             },
             {
-                $unwind: '$user_info' // 배열을 풀어줌
+                $unwind: '$quizData'
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    name: {$first: '$name'},
+                    totalPoints: {$sum: '$quizData.point'} // point 필드를 합산
+                }
             },
             {
                 $project: {
-                    USER_HOST: 1,
-                    USER_NAME: '$user_info.USER_NAME' // users 컬렉션에서 가져온 nickname 필드
+                    _id: 0,
+                    name: 1,
+                    totalPoints: 1
                 }
-            } */
+            }
         ]);
 
         apiReturn.setTableData(returnData);

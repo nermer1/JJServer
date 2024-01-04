@@ -51,27 +51,17 @@ export default class CommonSchema {
     }
 
     async getApiReturn(params: DBParamsType): Promise<ApiReturn> {
-        let apiReturn = new ApiReturn();
-
         switch (params.type) {
             case 'C':
-                //
-                apiReturn = await this.insert(params);
-                break;
+                return await this.insert(params);
             case 'R':
-                apiReturn = await this.findAll();
-                break;
+                return await this.findAll();
             case 'U':
-                //
-                apiReturn = await this.update(params);
-                break;
+                return await this.update(params);
             case 'D':
-                //
-                apiReturn = await this.delete(params);
-                break;
+                return await this.delete(params);
             default:
-                break;
+                throw new Error('type이 없거나 c,r,u,d만 입력 필요');
         }
-        return apiReturn;
     }
 }
