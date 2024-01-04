@@ -1,7 +1,7 @@
-import CommonQuery from './CommonQuery.js';
+import CommonSchema from './CommonSchema.js';
 import {validatorUtil as validator} from '../utils/UnietangUtils.js';
 
-class UserSchema extends CommonQuery {
+class UserSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
         super(schemaName, options);
     }

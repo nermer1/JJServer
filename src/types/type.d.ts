@@ -25,8 +25,8 @@ interface ObjArr {
 type DBNameType = 'holiday' | 'users' | 'userHost';
 
 interface DBDataType {
+    [key: string]: any;
     tableData: ObjAny[];
-    stringData: ObjAny;
 }
 
 interface DBParamsType {

@@ -3,14 +3,18 @@ export default class ApiReturn {
     private returnMessage: string = '';
     private returnErrorMessage: string = '';
     private returnErrorCode: string = '';
-    private tableData: ObjArr = {};
+    private data: ObjArr = {};
 
     put(key: string, value: Array<ObjAny>) {
-        this.tableData[key] = value;
+        this.data[key] = value;
     }
 
-    getTableData() {
-        return this.tableData;
+    setTableData(value: any) {
+        this.data['tableData'] = value;
+    }
+
+    getReturnData() {
+        return this.data;
     }
 
     getReturnMessage() {

@@ -1,6 +1,6 @@
-import CommonQuery from './CommonQuery.js';
+import CommonSchema from './CommonSchema.js';
 
-class HolidaySchema extends CommonQuery {
+class HolidaySchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
         super(schemaName, options);
     }

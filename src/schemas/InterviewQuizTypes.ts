@@ -1,6 +1,6 @@
-import CommonQuery from './CommonQuery.js';
+import CommonSchema from './CommonSchema.js';
 
-class interviewQuizTypesSchema extends CommonQuery {
+class InterviewQuizTypesSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
         super(schemaName, options);
     }
@@ -11,7 +11,7 @@ class interviewQuizTypesSchema extends CommonQuery {
  *
  */
 
-const InterviewQuizTypes = new interviewQuizTypesSchema('interviewQuizTypes', {
+const InterviewQuizTypes = new InterviewQuizTypesSchema('interviewQuizTypes', {
     type: {
         unique: true,
         required: true,

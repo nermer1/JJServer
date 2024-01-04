@@ -10,6 +10,32 @@ const isTest = true;
     return moment.tz('Asia/Seoul').format('YYYY-MM-DD');
 } */
 
+/**
+ * 부서, 날짜에 따라 데이터 나오는 방향?
+ */
+
+/**
+ * 호출 파라미터
+ * coRegno:
+ * deptId: 부서코드
+ * itemIds:[휴가 타입]
+ * {
+ * 2673DED180C14058A5492AD0C6593D45 연차
+ * 01A614219FAE435E991B16B84956D5E4 경조
+ * 5F451BD3A3A042C889FDCD8334FE5826 공가
+ * CC63430C4EB746E8BCF2629483F6C646 병가
+ * B4D79AED292B8991E050E7DE961F6DAB 대체휴가
+ * B4D79AED292D8991E050E7DE961F6DAB 포상휴가
+ * 2A65F1A08644427EB79313D8DED9F5DA 출산및육아
+ * holidayWork 휴일근무
+ * owWorkLabel 연장근무
+ * }
+ *
+ * progSts: ?
+ * sEdate: 시작일
+ * sEdate: 종료일
+ */
+
 function getParams() {
     return {
         mail: {
@@ -125,7 +151,8 @@ const getVacation = async () => {
                 setVacationList(res2.data.response, 'WEB');
                 params.mail.data.INFO_DATA = renderUseCalcData(vacationList);
                 if (params.mail.data.INFO_DATA.length === 0) params.mail.data['IS_EMPTY'] = true;
-                sendMail(params.mail);
+
+                //sendMail(params.mail);
             })
         );
     } catch (e) {
