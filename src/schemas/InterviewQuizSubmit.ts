@@ -6,15 +6,9 @@ class InterviewQuizSubmitSchema extends CommonSchema {
         super(schemaName, options);
     }
 
-    async insert(params: DBParamsType) {
+    async getSumPoint(findName: string) {
         const apiReturn = new ApiReturn();
-        params.data.tableData.map((item) => (item['name'] = params.data.name));
-        const returnData = await this.model.create(params.data.tableData);
-
-        // quiz랑 제출 조인 비교, 맞는 것들 합산해서 점수 합산 후 점수 조회
-
-        const schema = this.model;
-        schema.aggregate([
+        const returnData = await this.model.aggregate([
             {
                 $unwind: '$answer'
             },
@@ -38,10 +32,19 @@ class InterviewQuizSubmitSchema extends CommonSchema {
                 $unwind: '$quizData'
             },
             {
+                $match: {
+                    name: findName
+                }
+            },
+            {
                 $group: {
                     _id: '$_id',
                     name: {$first: '$name'},
-                    totalPoints: {$sum: '$quizData.point'} // point 필드를 합산
+                    totalPoints: {
+                        $sum: {
+                            $cond: [{$eq: ['$quizData.answer', '$answer.value']}, '$quizData.point', 0]
+                        }
+                    }
                 }
             },
             {
@@ -54,8 +57,16 @@ class InterviewQuizSubmitSchema extends CommonSchema {
         ]);
 
         apiReturn.setTableData(returnData);
-        apiReturn.setReturnMessage('삽입 성공');
+        apiReturn.setReturnMessage('호출 성공');
         return apiReturn;
+    }
+
+    async insert(params: DBParamsType) {
+        await this.model.create({
+            name: params.data.name,
+            answer: params.data.tableData
+        });
+        return await this.getSumPoint(params.data.name);
     }
 }
 
