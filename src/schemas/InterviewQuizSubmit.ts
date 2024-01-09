@@ -40,7 +40,8 @@ class InterviewQuizSubmitSchema extends CommonSchema {
                 $group: {
                     _id: '$_id',
                     name: {$first: '$name'},
-                    totalPoints: {
+                    totalScore: {$sum: '$quizData.point'},
+                    score: {
                         $sum: {
                             $cond: [{$eq: ['$quizData.answer', '$answer.value']}, '$quizData.point', 0]
                         }
@@ -51,7 +52,8 @@ class InterviewQuizSubmitSchema extends CommonSchema {
                 $project: {
                     _id: 0,
                     name: 1,
-                    totalPoints: 1
+                    score: 1,
+                    totalScore: 1
                 }
             }
         ]);

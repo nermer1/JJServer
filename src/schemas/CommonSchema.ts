@@ -15,7 +15,7 @@ export default class CommonSchema {
         const returnData = await this.model.create(params.data.tableData);
 
         apiReturn.setTableData(returnData);
-        apiReturn.setReturnMessage('삽입 성공');
+        apiReturn.setReturnMessage('생성 성공');
         return apiReturn;
     }
 
@@ -41,7 +41,7 @@ export default class CommonSchema {
         return apiReturn;
     }
 
-    async findAll() {
+    async findAll(params?: DBParamsType) {
         const apiReturn = new ApiReturn();
         const returnData = await this.model.find({});
 
@@ -55,7 +55,7 @@ export default class CommonSchema {
             case 'C':
                 return await this.insert(params);
             case 'R':
-                return await this.findAll();
+                return await this.findAll(params);
             case 'U':
                 return await this.update(params);
             case 'D':

@@ -6,8 +6,19 @@ class InterviewQuizSchema extends CommonSchema {
         super(schemaName, options);
     }
 
-    async findAll() {
+    async findAll(params: DBParamsType) {
+        const option = params.option || '';
         const apiReturn = new ApiReturn();
+        const projectQuery: any = {
+            question: 1,
+            choice: 1,
+            passage: 1,
+            answer: 1,
+            point: 1,
+            del: 1,
+            type: '$interviewQuiz.text'
+        };
+        if (option !== 'a') delete projectQuery.answer;
         const returnData = await this.model.aggregate([
             {
                 $lookup: {
@@ -21,14 +32,7 @@ class InterviewQuizSchema extends CommonSchema {
                 $unwind: '$interviewQuiz'
             },
             {
-                $project: {
-                    del: 1,
-                    question: 1,
-                    choice: 1,
-                    passage: 1,
-                    point: 1,
-                    type: '$interviewQuiz.text'
-                }
+                $project: projectQuery
             },
             {
                 $match: {
