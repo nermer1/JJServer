@@ -6,8 +6,9 @@ class InterviewQuizSubmitSchema extends CommonSchema {
         super(schemaName, options);
     }
 
-    async getUserSubmitData(findName: string) {
+    async getUserSubmitData(findName: string = '') {
         const apiReturn = new ApiReturn();
+        const userAllQuery = findName ? {name: findName} : {};
         const returnData = await this.model.aggregate([
             {
                 $unwind: '$answer'
@@ -32,9 +33,7 @@ class InterviewQuizSubmitSchema extends CommonSchema {
                 $unwind: '$quizData'
             },
             {
-                $match: {
-                    name: findName
-                }
+                $match: userAllQuery
             },
             {
                 $group: {
@@ -79,6 +78,15 @@ class InterviewQuizSubmitSchema extends CommonSchema {
             answer: params.data.tableData
         });
         return await this.getUserSubmitData(params.data.name);
+    }
+
+    async findAll(params?: DBParamsType) {
+        const apiReturn = new ApiReturn();
+        const returnData = await this.getUserSubmitData();
+
+        apiReturn.setTableData(returnData);
+        apiReturn.setReturnMessage('조회 성공');
+        return apiReturn;
     }
 }
 
