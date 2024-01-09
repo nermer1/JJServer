@@ -22,7 +22,7 @@ interface ObjArr {
     [key: string]: Array<ObjAny>;
 }
 
-type DBNameType = 'holiday' | 'users' | 'userHost';
+type DBNameType = 'holiday' | 'users' | 'userHost' | 'interviewQuiz';
 
 interface DBDataType {
     [key: string]: any;
@@ -32,6 +32,7 @@ interface DBDataType {
 interface DBParamsType {
     name: DBNameType;
     type: string;
+    option?: string;
     data: DBDataType;
 }
 

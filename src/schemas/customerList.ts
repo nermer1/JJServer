@@ -1,8 +1,18 @@
 import CommonSchema from './CommonSchema.js';
+import ApiReturn from '../structure/ApiReturn.js';
 
 class CustomerSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
         super(schemaName, options);
+    }
+
+    async findAll(params?: DBParamsType) {
+        const apiReturn = new ApiReturn();
+        const returnData = await this.model.find({}).sort({text: 1});
+
+        apiReturn.setTableData(returnData);
+        apiReturn.setReturnMessage('조회 성공');
+        return apiReturn;
     }
 }
 
