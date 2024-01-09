@@ -6,7 +6,7 @@ class InterviewQuizSubmitSchema extends CommonSchema {
         super(schemaName, options);
     }
 
-    async getSumPoint(findName: string) {
+    async getUserSubmitData(findName: string) {
         const apiReturn = new ApiReturn();
         const returnData = await this.model.aggregate([
             {
@@ -40,9 +40,19 @@ class InterviewQuizSubmitSchema extends CommonSchema {
                 $group: {
                     _id: '$_id',
                     name: {$first: '$name'},
-                    totalPoints: {
+                    totalScore: {$sum: '$quizData.point'},
+                    score: {
                         $sum: {
                             $cond: [{$eq: ['$quizData.answer', '$answer.value']}, '$quizData.point', 0]
+                        }
+                    },
+                    quizData: {
+                        $push: {
+                            $cond: {
+                                if: {$ne: ['$quizData.answer', '$answer.value']},
+                                then: '$quizData',
+                                else: '$$REMOVE'
+                            }
                         }
                     }
                 }
@@ -50,8 +60,10 @@ class InterviewQuizSubmitSchema extends CommonSchema {
             {
                 $project: {
                     _id: 0,
+                    quizData: 1,
                     name: 1,
-                    totalPoints: 1
+                    score: 1,
+                    totalScore: 1
                 }
             }
         ]);
@@ -66,7 +78,7 @@ class InterviewQuizSubmitSchema extends CommonSchema {
             name: params.data.name,
             answer: params.data.tableData
         });
-        return await this.getSumPoint(params.data.name);
+        return await this.getUserSubmitData(params.data.name);
     }
 }
 
