@@ -82,11 +82,13 @@ class InterviewQuizSubmitSchema extends CommonSchema {
 
     async findAll(params?: DBParamsType) {
         const apiReturn = new ApiReturn();
-        const returnData = await this.getUserSubmitData();
-
-        apiReturn.setTableData(returnData);
-        apiReturn.setReturnMessage('조회 성공');
-        return apiReturn;
+        let findUserName;
+        try {
+            findUserName = params?.data.name;
+        } catch (e) {
+            findUserName = '';
+        }
+        return await this.getUserSubmitData(findUserName);
     }
 }
 
