@@ -21,9 +21,8 @@ export default class CommonSchema {
 
     async delete(params: DBParamsType) {
         const apiReturn = new ApiReturn();
-        const inputData = params.data;
-        const id = inputData.tableData[0].id;
-        const returnData = await this.model.findByIdAndDelete(id);
+        const inputData = params.data.tableData[0];
+        const returnData = await this.model.findByIdAndDelete(inputData.id);
 
         apiReturn.setTableData(returnData);
         apiReturn.setReturnMessage('삭제 성공');
@@ -32,9 +31,8 @@ export default class CommonSchema {
 
     async update(params: DBParamsType) {
         const apiReturn = new ApiReturn();
-        const inputData = params.data;
-        const id = inputData.tableData[0].id;
-        const returnData = await this.model.findOneAndUpdate({_id: id}, inputData, {new: true});
+        const inputData = params.data.tableData[0];
+        const returnData = await this.model.findOneAndUpdate({_id: inputData.id}, inputData, {new: true});
 
         apiReturn.setTableData(returnData);
         apiReturn.setReturnMessage('업데이트 성공');
