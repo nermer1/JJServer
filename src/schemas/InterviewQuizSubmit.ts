@@ -49,7 +49,9 @@ class InterviewQuizSubmitSchema extends CommonSchema {
                         $push: {
                             $cond: {
                                 if: {$ne: ['$quizData.answer', '$answer.value']},
-                                then: '$quizData',
+                                then: {
+                                    $mergeObjects: ['$quizData', {user_answer: '$answer.value'}]
+                                },
                                 else: '$$REMOVE'
                             }
                         }
