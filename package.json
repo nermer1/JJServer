@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "* install\r ```text\r npm install --save-dev eslint\r ```",
     "main": "./app.js",
-    "type": "module",
+    "type": "commonjs",
     "scripts": {
         "test": "mocha src/test",
         "dev": "ts-node app.js",

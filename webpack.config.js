@@ -15,8 +15,9 @@ export default {
     output: {
         filename: 'bundle.js',
         path: path.resolve(__dirname, 'dist'),
-        libraryTarget: 'module',
-        chunkFormat: 'module'
+        //libraryTarget: 'module',
+        chunkFormat: 'module',
+        module: false
     },
     resolve: {
         modules: ['node_modules'],
