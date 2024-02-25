@@ -3,3 +3,4 @@
 /config/server/.env.aes*
 /target
 *.js
+!webpack.config.js

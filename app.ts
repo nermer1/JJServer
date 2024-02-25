@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import {basicProperty} from './src/properties/ServerProperty.js';
 import {createServer} from 'http';
-import {Server} from 'socket.io';
+import {Server, Socket} from 'socket.io';
 import {router} from './src/router/router.js';
 import scheduleManger from './src/scheduler/mailSendScheduler.js';
 import db from './src/db.js';
@@ -19,7 +19,8 @@ app.set('socketio', io);
 db.connect();
 
 const socketServer = app.get('socketio');
-socketServer.on('connection', function (socket: any) {
+
+socketServer.on('connection', function (socket: Socket) {
     /* socket.on('disconnect', function () {
         console.log('연결 끊김');
     }); */
