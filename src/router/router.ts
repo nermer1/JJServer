@@ -5,6 +5,7 @@ import UnidocuLicenseController from '../controller/UnidocuLicenseController.js'
 import PrdApiController from '../controller/PrdApiController.js';
 import RdpDownloadController from '../controller/RdpDownloadController.js';
 import GitHistoryDownloadController from '../controller/GitHistoryDownloadController.js';
+import GoogleOtpController from '../controller/GoogleOtpController.js';
 
 const router = express.Router();
 
@@ -31,6 +32,9 @@ router.get('/rdp/download', RdpDownloadController.getFileDownload.bind(RdpDownlo
 
 // git 이력 다운로드
 router.get('/git/download', GitHistoryDownloadController.getFileDownload.bind(GitHistoryDownloadController));
+
+// google otp 가져오기
+router.post('/getOtpList', GoogleOtpController.getList.bind(GoogleOtpController));
 
 export {router};
 
