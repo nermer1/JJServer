@@ -4,3 +4,4 @@
 /target
 *.js
 !webpack.config.js
+*.map

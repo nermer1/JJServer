@@ -13,14 +13,16 @@ export default {
         outputModule: true
     },
     output: {
-        filename: 'bundle.js',
+        filename: 'bundle.cjs',
         path: path.resolve(__dirname, 'dist'),
-        //libraryTarget: 'module',
         chunkFormat: 'module',
         module: false
     },
     resolve: {
-        modules: ['node_modules'],
+        /* alias: {
+            './subscriptionGroupManager.js': path.resolve(__dirname, 'src/selenium/subscriptionGroupManager.js')
+        }, */
+        modules: [path.resolve(__dirname, 'src'), 'node_modules'],
         extensions: ['.ts', '.js']
     },
     module: {
@@ -34,17 +36,12 @@ export default {
                 test: /\.ts$/,
                 loader: 'esbuild-loader',
                 options: {
-                    target: 'es2020'
+                    target: 'es2015'
                 }
             }
         ]
     },
-    plugins: [
-        new EsbuildPlugin(),
-        new Dotenv({
-            path: './config/server/.env'
-        })
-    ],
+    plugins: [new EsbuildPlugin()],
     optimization: {
         //minimize: true
     },

@@ -1,26 +1,36 @@
 import express from 'express';
-import hyperv from '../controller/hypervConnectedController.js';
-import license from '../controller/unidocuLicenseController.js';
-import db from '../controller/apiController.js';
+
+import HypervConnectedController from '../controller/HypervConnectedController.js';
+import UnidocuLicenseController from '../controller/UnidocuLicenseController.js';
+import PrdApiController from '../controller/PrdApiController.js';
+import RdpDownloadController from '../controller/RdpDownloadController.js';
+import GitHistoryDownloadController from '../controller/GitHistoryDownloadController.js';
+
 const router = express.Router();
 
 /**
  * 하이퍼브이 접속 정보 관련
  */
-router.get('/hyperv/connect/init', hyperv.getHyperVConnect);
-router.get('/hyperv/connect/update', hyperv.getHyperVUpdate);
+router.get('/hyperv/connect/init', HypervConnectedController.getHyperVConnect.bind(HypervConnectedController));
+router.get('/hyperv/connect/update', HypervConnectedController.getHyperVUpdate.bind(HypervConnectedController));
 
 /**
  * 유니다큐 암복호화 관련
  */
-router.post('/license/encrypt/text', license.getEncryptText);
-router.post('/license/decrypt/text', license.getDecryptText);
-router.post('/license/encrypt/file', license.getLicenseFile);
+router.post('/license/encrypt/text', UnidocuLicenseController.getEncryptText.bind(UnidocuLicenseController));
+router.post('/license/decrypt/text', UnidocuLicenseController.getDecryptText.bind(UnidocuLicenseController));
+router.post('/license/encrypt/file', UnidocuLicenseController.getLicenseFile.bind(UnidocuLicenseController));
 
 /**
  *
  */
-router.post('/api/v1', db.call);
+router.post('/api/v1', PrdApiController.call.bind(PrdApiController));
+
+// rdp 테스트
+router.get('/rdp/download', RdpDownloadController.getFileDownload.bind(RdpDownloadController));
+
+// git 이력 다운로드
+router.get('/git/download', GitHistoryDownloadController.getFileDownload.bind(GitHistoryDownloadController));
 
 export {router};
 

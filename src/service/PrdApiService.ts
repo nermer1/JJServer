@@ -1,8 +1,8 @@
 import {schemas} from '../schemas/schemaMap.js';
 import ApiReturn from '../structure/ApiReturn.js';
 
-const service = {
-    call: async (params: DBParamsType) => {
+class PrdApiService {
+    public async call(params: DBParamsType): Promise<ApiReturn> {
         try {
             const schema = schemas[params.name];
             return await schema.getApiReturn(params);
@@ -12,10 +12,10 @@ const service = {
             return apiReturn;
         }
     }
-};
 
-function checkData(params: DBParamsType) {
-    if (!params) throw '';
+    private checkData(params: DBParamsType): void {
+        if (!params) throw '';
+    }
 }
 
-export default service;
+export default new PrdApiService();

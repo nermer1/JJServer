@@ -1,5 +1,6 @@
 import CommonSchema from './CommonSchema.js';
 import ApiReturn from '../structure/ApiReturn.js';
+import {validatorUtil as validator} from '../utils/UnietangUtils.js';
 
 class CustomerSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
@@ -48,6 +49,19 @@ const CustomerList = new CustomerSchema('customer', {
     },
     mobile_flag: {
         type: String
+    },
+    ip: {
+        type: String,
+        required: true,
+        validate: {
+            validator: (value: string) => validator.isIPv4(value),
+            message: 'IPv4 validation failed'
+        }
+    },
+    ssh: {
+        type: String,
+        required: true,
+        default: ''
     }
 });
 

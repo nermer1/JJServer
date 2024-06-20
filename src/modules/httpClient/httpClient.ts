@@ -8,7 +8,7 @@ const instance = axios.create({
 const axiosCall = (url: string, params: any, callback: Function, errorCallback?: Function) => {
     const options = {
         headers: params.headers,
-        method: 'post',
+        method: params.method || 'post',
         url: url,
         data: params.data
     };

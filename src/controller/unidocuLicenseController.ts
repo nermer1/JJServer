@@ -1,5 +1,5 @@
 import {Request, Response, NextFunction} from 'express';
-import licenseService from '../service/licenseService.js';
+import unidocuLicenseService from '../service/UnidocuLicenseService.js';
 
 /* {
     status: number,
@@ -7,21 +7,23 @@ import licenseService from '../service/licenseService.js';
     data: any
 } */
 
-const controller = {
-    getEncryptText: (req: Request, res: Response) => {
+class UnidocuLicenseController {
+    public getEncryptText(req: Request, res: Response): void {
         const {cryptoText} = req.body;
-        res.json({data: licenseService.getEncryptText(cryptoText)});
-    },
-    getDecryptText: (req: Request, res: Response) => {
+        res.json({data: unidocuLicenseService.getEncryptText(cryptoText)});
+    }
+
+    public getDecryptText(req: Request, res: Response): void {
         const {cryptoText} = req.body;
-        res.json({data: licenseService.getDecryptText(cryptoText)});
-    },
-    getLicenseFile: async (req: Request, res: Response) => {
+        res.json({data: unidocuLicenseService.getDecryptText(cryptoText)});
+    }
+
+    public getLicenseFile(req: Request, res: Response): void {
         /**
          * @todo data type 정의 필요
          */
         res.json({data: ''});
     }
-};
+}
 
-export default controller;
+export default new UnidocuLicenseController();

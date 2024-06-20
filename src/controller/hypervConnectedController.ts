@@ -1,16 +1,17 @@
 import {Request, Response, NextFunction} from 'express';
-import hypervService from '../service/hypervConnectedService.js';
+import hypervConnectedService from '../service/HypervConnectedService.js';
 
-const controller = {
-    getHyperVConnect: (req: Request, res: Response) => {
-        res.json({data: hypervService.getHypervStatus()});
-    },
-    getHyperVUpdate: (req: Request, res: Response) => {
+class HypervConnectedController {
+    public getHyperVConnect(req: Request, res: Response): void {
+        res.json({data: hypervConnectedService.getHypervStatus()});
+    }
+
+    public getHyperVUpdate(req: Request, res: Response): void {
         const socket = req.app.get('socketio');
         const data = req.query as ObjType;
-        hypervService.getHyperVUpdate(socket, data);
+        hypervConnectedService.getHyperVUpdate(socket, data);
         res.json({success: true});
     }
-};
+}
 
-export default controller;
+export default new HypervConnectedController();
