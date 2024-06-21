@@ -7,7 +7,7 @@
     "scripts": {
         "test": "mocha src/test",
         "dev": "ts-node app.js",
-        "build": "webpack",
+        "build": "npx tsc && webpack",
         "start": "node bundle.cjs"
     },
     "exports": {

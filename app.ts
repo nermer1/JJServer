@@ -1,15 +1,31 @@
 import express from 'express';
 import cors from 'cors';
-import {basicProperty} from './src/properties/ServerProperty.js';
+import fs from 'fs';
+import {extenalProperty, basicProperty} from './src/properties/ServerProperty.js';
 import {createServer} from 'http';
 import {Server, Socket} from 'socket.io';
 import {router} from './src/router/router.js';
 import scheduleManger from './src/scheduler/mailSendScheduler.js';
 import db from './src/db.js';
 
+/* let sslOptions = {};
+
+try {
+    sslOptions = {
+        key: fs.readFileSync(extenalProperty.getString('PROD_SSL_KEY')),
+        cert: fs.readFileSync(extenalProperty.getString('PROD_SSL_CERT'))
+    };
+} catch (e) {
+    console.log(e);
+} */
+
 const app = express();
+//const httpServer = createServer(sslOptions, app);
 const httpServer = createServer(app);
-const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {cors: {origin: '*'}});
+const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
+    cors: {origin: '*'},
+    path: 'https://eatang.unipost.co.kr/helper/'
+});
 
 app.use(cors());
 app.use(express.json());
