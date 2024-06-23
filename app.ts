@@ -24,7 +24,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
     cors: {origin: '*'},
-    path: 'https://eatang.unipost.co.kr/helper/'
+    path: '/helper/socket.io/'
 });
 
 app.use(cors());
