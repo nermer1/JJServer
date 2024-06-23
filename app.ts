@@ -23,8 +23,7 @@ const app = express();
 //const httpServer = createServer(sslOptions, app);
 const httpServer = createServer(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
-    cors: {origin: '*'},
-    path: '/helper/socket.io/'
+    cors: {origin: '*'}
 });
 
 app.use(cors());
