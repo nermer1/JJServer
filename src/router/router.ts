@@ -36,6 +36,9 @@ router.get('/git/download', GitHistoryDownloadController.getFileDownload.bind(Gi
 // google otp 가져오기
 router.post('/getOtpList', GoogleOtpController.getList.bind(GoogleOtpController));
 
+// sse 테스트
+router.get('/sse/hyperv', HypervConnectedController.test.bind(HypervConnectedController));
+
 export {router};
 
 // 전체 데이터 반환

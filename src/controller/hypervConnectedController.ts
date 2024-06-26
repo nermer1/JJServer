@@ -9,8 +9,13 @@ class HypervConnectedController {
     public getHyperVUpdate(req: Request, res: Response): void {
         const socket = req.app.get('socketio');
         const data = req.query as ObjType;
-        hypervConnectedService.getHyperVUpdate(socket, data);
+        hypervConnectedService.getHyperVUpdate(data);
+        //hypervConnectedService.getHyperVUpdate(socket, data);
         res.json({success: true});
+    }
+
+    public test(res: Response): void {
+        hypervConnectedService.test(res);
     }
 }
 
