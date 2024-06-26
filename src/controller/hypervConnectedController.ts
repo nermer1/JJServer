@@ -14,7 +14,7 @@ class HypervConnectedController {
         res.json({success: true});
     }
 
-    public test(res: Response): void {
+    public test(req: Request, res: Response): void {
         hypervConnectedService.test(res);
     }
 }
