@@ -1,4 +1,5 @@
 import CommonSchema from './CommonSchema.js';
+import mongoose, {Schema} from 'mongoose';
 import ApiReturn from '../structure/ApiReturn.js';
 import {validatorUtil as validator} from '../utils/UnietangUtils.js';
 
@@ -23,6 +24,12 @@ class CustomerSchema extends CommonSchema {
  * text: 업체명
  * type: 타입1 운영유지보수, 타입2 하자유지보수, 타입3 계약기간동안 운영유지보수
  */
+
+const CustomerOtpSchema = new Schema({
+    secret: {type: String, required: true},
+    mobile: {type: String, required: true},
+    user: {type: String, required: true}
+});
 
 const CustomerList = new CustomerSchema('customer', {
     team: {
@@ -62,7 +69,8 @@ const CustomerList = new CustomerSchema('customer', {
         type: String,
         required: true,
         default: ''
-    }
+    },
+    otp: [CustomerOtpSchema]
 });
 
 export {CustomerList};

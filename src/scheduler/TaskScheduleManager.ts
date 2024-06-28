@@ -32,10 +32,3 @@ export class TaskScheduleManager {
         this.scheduleList.push({jobName, batchjob, jobCallback});
     }
 }
-
-interface ScheduleData {
-    jobName: string;
-    batchjob: string | Date;
-    jobCallback: JobCallback;
-    job?: Job;
-}

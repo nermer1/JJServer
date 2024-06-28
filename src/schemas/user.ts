@@ -61,7 +61,7 @@ const Users = new UserSchema('users', {
         type: String,
         validate: {
             validator: (value: string) => validator.isPhone(value),
-            message: 'phone numver validation failed'
+            message: 'Mobile number validation failed'
         }
     },
     USER_POSISTION: {required: true, type: String},

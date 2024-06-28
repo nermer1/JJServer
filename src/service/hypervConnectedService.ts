@@ -20,9 +20,15 @@ class HypervConnectedService {
         await this.setCompanyInfo(data);
 
         this.sseClients.forEach((client) => {
-            client.write('sessionData:' + JSON.stringify(this.getHypervStatus()));
+            client.write('data:' + JSON.stringify(this.getHypervStatus()) + '\n\n');
         });
     }
+
+    /* setInterval(() => {
+        this.sseClients.forEach((client) => {
+            client.write('data:' + JSON.stringify(this.getHypervStatus()) + '\n\n');
+        });
+    }, 55000); */
 
     public test(res: Response): void {
         res.setHeader('Content-Type', 'text/event-stream');

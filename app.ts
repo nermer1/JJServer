@@ -1,14 +1,29 @@
 import express from 'express';
 import cors from 'cors';
-import {basicProperty} from './src/properties/ServerProperty.js';
+import fs from 'fs';
+import {extenalProperty, basicProperty} from './src/properties/ServerProperty.js';
+//import {createServer} from 'https';
 import {createServer} from 'http';
 import {Server, Socket} from 'socket.io';
 import {router} from './src/router/router.js';
 import scheduleManger from './src/scheduler/mailSendScheduler.js';
 import db from './src/db.js';
 
+/* let sslOptions = {};
+
+try {
+    sslOptions = {
+        key: fs.readFileSync(extenalProperty.getString('PROD_SSL_KEY')),
+        cert: fs.readFileSync(extenalProperty.getString('PROD_SSL_CERT'))
+    };
+} catch (e) {
+    console.log(e);
+} */
+
 const app = express();
 const httpServer = createServer(app);
+httpServer.keepAliveTimeout = 0;
+//const httpServer = createServer(sslOptions, app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
     cors: {origin: '*'}
 });
@@ -34,7 +49,7 @@ socketServer.on('connection', function (socket: Socket) {
 });
 
 // 스케줄러 실행 관련
-scheduleManger.init();
+//scheduleManger.init();
 
 const port = basicProperty.server.port;
 

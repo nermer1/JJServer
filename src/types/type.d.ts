@@ -99,3 +99,16 @@ interface UnipostSelelniumParams {
     mail: SeleniumMailParams;
     driver: SeleniumDriverParams;
 }
+
+interface ScheduleData {
+    jobName: string;
+    batchjob: string | Date;
+    jobCallback: JobCallback;
+    job?: Job;
+}
+
+interface CustomnerOtp {
+    secret: string;
+    mobile: string;
+    user: string;
+}
