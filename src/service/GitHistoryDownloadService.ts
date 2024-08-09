@@ -1,28 +1,59 @@
-import axios from 'axios';
+import axios, {AxiosResponse} from 'axios';
+import {Request, Response, NextFunction} from 'express';
 import {generatorUtils as generator} from '../utils/UnietangUtils.js';
+import {dateUtil} from '../utils/UnietangUtils.js';
 
 class GitHistoryDownloadService {
-    public async getExcelBuffer(): Promise<Buffer> {
-        const gitlabBaseUrl = 'http://unidocu-scm/gitlab/api/v4';
-        const projectId = '567';
-        const accessToken = 'glpat-h5TDEcXQyuqjXqcRKHNs';
-        try {
-            const response = await axios.get(`${gitlabBaseUrl}/projects/${projectId}/repository/commits`, {
-                headers: {
-                    'PRIVATE-TOKEN': accessToken
-                },
-                params: {
-                    ref_name: 'master',
-                    since: new Date('2024-01-01').toISOString(),
-                    until: new Date('2024-06-13').toISOString()
-                }
-            });
+    // 경로, 토큰은 설정 값으로 받아와야 겠음
+    private gitlabBaseUrl = 'http://gitlab/gitlab/api/v4/projects/';
+    //private gitlabBaseUrl = 'http://unidocu/gitlab-test/api/v4/projects/';
+    private projectId = '';
+    private accessToken = 'glpat-36yQp6P_vpxsx1dQJf7Y';
 
-            return generator.exportToExcel(response.data);
-        } catch (error) {
-            console.error('Error fetching GitLab history:', error);
-            throw error;
-        }
+    public async getExcelBuffer(req: Request): Promise<Buffer> {
+        const {projectId, fromDate, toDate} = req.query as any;
+        this.projectId = await this.getProjectId(projectId);
+
+        const response: AxiosResponse<any> = await axios.get(`${this.gitlabBaseUrl}${this.projectId}/repository/commits`, {
+            headers: {
+                'PRIVATE-TOKEN': this.accessToken
+            },
+            params: {
+                ref_name: 'master',
+                since: new Date(fromDate).toISOString(),
+                until: new Date(toDate).toISOString()
+            }
+        });
+
+        response.data.forEach((commit: any) => {
+            commit.created_at = dateUtil.formatDate(new Date(commit.created_at), 'yyyy-MM-dd hh:mm:dd');
+        });
+
+        const excelInfo: ExcelDataType = {
+            headers: [
+                {header: '관리자', key: 'author', width: 20, data_header: 'author_name'},
+                {header: '수정 시간', key: 'createdAt', width: 20, data_header: 'created_at'},
+                {header: '수정내용 [접수번호] 내용', key: 'title', width: 100, data_header: 'title'}
+            ],
+            sheetName: 'GitLab History',
+            data: response.data
+        };
+        return generator.exportToExcel(excelInfo);
+    }
+
+    private async getProjectId(name: string): Promise<string> {
+        const response: AxiosResponse<any> = await axios.get(`${this.gitlabBaseUrl}?search=${name}`, {
+            headers: {
+                'PRIVATE-TOKEN': this.accessToken
+            },
+            params: {
+                ref_name: 'master'
+            }
+        });
+
+        if (response.data.length === 0) throw new Error('project not found');
+
+        return response.data[0].id;
     }
 }
 

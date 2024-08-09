@@ -112,3 +112,16 @@ interface CustomnerOtp {
     mobile: string;
     user: string;
 }
+
+interface ExcelDataType {
+    headers: Array<WorkbookHeaderType>;
+    sheetName?: string;
+    data: any;
+}
+
+interface WorkbookHeaderType {
+    header: string;
+    key: string;
+    width?: number;
+    data_header: string;
+}

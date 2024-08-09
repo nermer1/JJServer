@@ -14,6 +14,31 @@ class GoogleOtpService {
             ]
         },
         {
+            customer: '광동',
+            otp: [
+                {
+                    secret: 'IDRIPE4KVJKYSXUE',
+                    mobile: '5',
+                    user: 'smoh'
+                },
+                {
+                    secret: 'ZTXSNHNBEJJV6PWL',
+                    mobile: '5',
+                    user: 'soccer6504'
+                },
+                {
+                    secret: 'GXINK4F5JBVP7TRC',
+                    mobile: '5',
+                    user: 'UNI01'
+                },
+                {
+                    secret: 'TX24DE6KCV53UHZI',
+                    mobile: '5',
+                    user: 'UNI02'
+                }
+            ]
+        },
+        {
             customer: 'FNU',
             otp: [
                 {
@@ -252,14 +277,19 @@ class GoogleOtpService {
             customer: '롯데알미늄',
             otp: [
                 {
-                    secret: 'JA2U4NSTJRIUSQSCJNFFEWKWGY',
+                    secret: 'LFGTINCGIM2VMWKYJFLVSQSVKQ',
                     mobile: '5',
-                    user: 'LANIS-DOM-unipost_usr2'
+                    user: 'LANIS-DOM-splpjt_13'
                 },
                 {
-                    secret: 'GZMDEQKBK5HTKSSGJZKEIT2QKI',
-                    mobile: '3',
-                    user: 'LANIS-DOM-unipost_usr1'
+                    secret: 'KVDVONCZJJKUMVCVKNDFSWSPK4',
+                    mobile: '5',
+                    user: 'LANIS-DOM-splpjt_14'
+                },
+                {
+                    secret: 'LIZTIRCELJLE6VCHKJHVCUKVKQ',
+                    mobile: '5',
+                    user: 'LANIS-DOM-splpjt_15'
                 }
             ]
         },
@@ -270,6 +300,16 @@ class GoogleOtpService {
                     secret: '2D3QQWWA5QQTFRFI',
                     mobile: '3',
                     user: 'uni005-SecuwaySSL'
+                }
+            ]
+        },
+        {
+            customer: '구독웹',
+            otp: [
+                {
+                    secret: '3KXKOCLVR3WI5SA65NWP6P5NLMYEIMOC',
+                    mobile: 'none',
+                    user: 'unipost.web@gmail.com'
                 }
             ]
         }
