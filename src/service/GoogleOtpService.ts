@@ -1,6 +1,6 @@
 import {authenticator} from 'otplib';
-import prdApiService from './PrdApiService';
-import ApiReturn from '../structure/ApiReturn';
+import prdApiService from './PrdApiService.js';
+import ApiReturn from '../structure/ApiReturn.js';
 
 class GoogleOtpService {
     private otpListData = [
@@ -342,8 +342,8 @@ class GoogleOtpService {
         };
 
         const otpListData = await prdApiService.call(params);
-        const filterOtps: any = otpListData.getTableData().find((optItem) => optItem['customer'] === customer);
-        const otps = filterOtps.otp.map(({secret, user, mobile}: any) => {
+        const tableData = otpListData.getTableData()[0];
+        const otps = tableData.etc.otp.map(({secret, user, mobile}: any) => {
             return {user, mobile, otp: authenticator.generate(secret)};
         });
         const apiReturn = new ApiReturn();
