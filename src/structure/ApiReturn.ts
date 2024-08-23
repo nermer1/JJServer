@@ -5,8 +5,12 @@ export default class ApiReturn {
     private returnErrorCode: string = '';
     private data: ObjArr = {};
 
-    put(key: string, value: Array<ObjAny>) {
+    put(key: string, value: any) {
         this.data[key] = value;
+    }
+
+    getTableData() {
+        return this.data['tableData'];
     }
 
     setTableData(value: any) {

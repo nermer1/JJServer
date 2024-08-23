@@ -39,9 +39,10 @@ export default class CommonSchema {
         return apiReturn;
     }
 
-    async findAll(params?: DBParamsType) {
+    async findAll(params: DBParamsType) {
+        const option = params.option || {};
         const apiReturn = new ApiReturn();
-        const returnData = await this.model.find({});
+        const returnData = await this.model.find(option);
 
         apiReturn.setTableData(returnData);
         apiReturn.setReturnMessage('조회 성공');

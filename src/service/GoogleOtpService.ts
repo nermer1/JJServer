@@ -1,4 +1,6 @@
 import {authenticator} from 'otplib';
+import prdApiService from './PrdApiService';
+import ApiReturn from '../structure/ApiReturn';
 
 class GoogleOtpService {
     private otpListData = [
@@ -315,7 +317,7 @@ class GoogleOtpService {
         }
     ];
 
-    public getList(option: string, customer: any) {
+    /* public getList(option: string, customer: any) {
         if (option === 'a') {
             return {tableData: this.otpListData};
         } else {
@@ -327,6 +329,28 @@ class GoogleOtpService {
             console.log(authenticator.timeUsed());
             return {tableData: otps, timeUse: authenticator.timeUsed()};
         }
+    } */
+
+    public async getList(customer: string) {
+        const params: DBParamsType = {
+            name: 'customerList',
+            type: 'R',
+            option: {code: customer},
+            data: {
+                tableData: []
+            }
+        };
+
+        const otpListData = await prdApiService.call(params);
+        const filterOtps: any = otpListData.getTableData().find((optItem) => optItem['customer'] === customer);
+        const otps = filterOtps.otp.map(({secret, user, mobile}: any) => {
+            return {user, mobile, otp: authenticator.generate(secret)};
+        });
+        const apiReturn = new ApiReturn();
+        apiReturn.put('timeUse', authenticator.timeUsed());
+        apiReturn.setTableData(otps);
+        //return {tableData: otps, timeUse: authenticator.timeUsed()};
+        return apiReturn;
     }
 }
 

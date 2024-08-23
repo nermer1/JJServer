@@ -7,15 +7,6 @@ class CustomerSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
         super(schemaName, options);
     }
-
-    async findAll(params?: DBParamsType) {
-        const apiReturn = new ApiReturn();
-        const returnData = await this.model.find({}).sort({text: 1});
-
-        apiReturn.setTableData(returnData);
-        apiReturn.setReturnMessage('조회 성공');
-        return apiReturn;
-    }
 }
 
 /**
@@ -25,15 +16,8 @@ class CustomerSchema extends CommonSchema {
  * type: 타입1 운영유지보수, 타입2 하자유지보수, 타입3 계약기간동안 운영유지보수
  */
 
-const CustomerOtpSchema = new Schema({
-    secret: {type: String, required: true},
-    mobile: {type: String, required: true},
-    user: {type: String, required: true}
-});
-
 const CustomerList = new CustomerSchema('customer', {
     team: {
-        required: true,
         type: String
     },
     code: {
@@ -50,27 +34,33 @@ const CustomerList = new CustomerSchema('customer', {
         type: String,
         defalut: '01'
     },
-    version: {
-        required: true,
-        type: String
-    },
-    mobile_flag: {
-        type: String
-    },
-    ip: {
-        type: String,
-        required: true,
-        validate: {
-            validator: (value: string) => validator.isIPv4(value),
-            message: 'IPv4 validation failed'
-        }
-    },
     ssh: {
-        type: String,
-        required: true,
-        default: ''
+        type: String
     },
-    otp: [CustomerOtpSchema]
+    etc: {
+        otp: [
+            {
+                secret: {type: String, required: true},
+                mobile: {type: String, required: true},
+                user: {type: String, required: true}
+            }
+        ],
+        unidocu: {
+            mobile: {type: String},
+            version: {type: String}
+        },
+        pc: [
+            {
+                ip: {
+                    type: String,
+                    validate: {
+                        validator: (value: string) => validator.isIPv4(value),
+                        message: 'IPv4 validation failed'
+                    }
+                }
+            }
+        ]
+    }
 });
 
 export {CustomerList};
