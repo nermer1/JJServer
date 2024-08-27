@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import env from 'dotenv';
 import UniPostCipher from '../cipher/UniPostCipher.js';
 
@@ -10,7 +11,21 @@ class Property implements IProperty {
 
     public constructor(dirPath: string) {
         this.dirPath = dirPath;
-        fs.readdirSync(this.dirPath).forEach((name: string) => env.config({path: this.dirPath + name}));
+        this.mergeEnv(this.dirPath);
+    }
+
+    private mergeEnv(dirPath: string) {
+        fs.readdirSync(dirPath).forEach((name: string) => {
+            const fullPath = path.join(dirPath, name);
+            const stat = fs.statSync(fullPath);
+
+            if (stat.isDirectory()) {
+                if (process.env['SERVER_ALIAS'] === 'product' && name === 'dev') return;
+                this.mergeEnv(fullPath);
+            } else if (stat.isFile()) {
+                env.config({path: fullPath});
+            }
+        });
     }
 
     private typeConverter: any = {

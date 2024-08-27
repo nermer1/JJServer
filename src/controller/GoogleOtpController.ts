@@ -2,9 +2,9 @@ import {Request, Response, NextFunction} from 'express';
 import googleOtpService from '../service/GoogleOtpService.js';
 
 class GoogleOtpController {
-    public getList(req: Request, res: Response): void {
+    public async getList(req: Request, res: Response): Promise<void> {
         const {customer} = req.body;
-        res.json(googleOtpService.getList(customer));
+        res.json(await googleOtpService.getList(customer));
     }
 }
 

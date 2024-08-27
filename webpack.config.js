@@ -1,6 +1,7 @@
 import path from 'path';
 import {fileURLToPath} from 'url';
 import nodeExternals from 'webpack-node-externals';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
 import Dotenv from 'dotenv-webpack';
 import {EsbuildPlugin} from 'esbuild-loader';
 
@@ -27,11 +28,6 @@ export default {
     },
     module: {
         rules: [
-            /* {
-                test: /\.ts$/,
-                use: 'ts-loader',
-                exclude: /node_modules/
-            } , */
             {
                 test: /\.ts$/,
                 loader: 'esbuild-loader',
@@ -41,9 +37,20 @@ export default {
             }
         ]
     },
-    plugins: [new EsbuildPlugin()],
+    plugins: [
+        new EsbuildPlugin(),
+        new CopyWebpackPlugin({
+            patterns: [
+                {from: 'config', to: 'config'},
+                {from: 'src/ui/template/mustache', to: 'src/ui/template/mustache'},
+                {from: 'package.json', to: 'package.json'},
+                {from: 'package-build.json', to: 'package-build.json'},
+                {from: 'package-lock.json', to: 'package-lock.json'}
+            ]
+        })
+    ],
     optimization: {
-        //minimize: true
+        minimize: true
     },
     externals: [nodeExternals()],
     mode: 'development',
