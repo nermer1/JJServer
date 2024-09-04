@@ -51,7 +51,7 @@ class InterviewQuizSchema extends CommonSchema {
     async delete(params: DBParamsType) {
         const apiReturn = new ApiReturn();
         const inputData = params.data;
-        const id = inputData.tableData[0].id;
+        const id = inputData.tableData[0]._id;
         const returnData = await this.model.findOneAndUpdate({_id: id}, {del: 'X'}, {new: true});
 
         apiReturn.setTableData(returnData);

@@ -12,6 +12,6 @@ export default class ValidatorUtils {
     }
 
     public static isMacAddress(macAddress: string) {
-        return /^([a-fA-F0-9]{2}:){5}([a-fA-F0-9]{2})$/.test(macAddress);
+        return /^([a-fA-F0-9]{2}\-){5}([a-fA-F0-9]{2})$/.test(macAddress);
     }
 }

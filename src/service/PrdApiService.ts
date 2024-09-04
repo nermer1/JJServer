@@ -4,7 +4,8 @@ import ApiReturn from '../structure/ApiReturn.js';
 class PrdApiService {
     public async call(params: DBParamsType): Promise<ApiReturn> {
         try {
-            const schema = schemas[params.name];
+            const collectionName = params.name;
+            const schema = schemas[collectionName as keyof typeof schemas];
             return await schema.getApiReturn(params);
         } catch (e: any) {
             const apiReturn = new ApiReturn();

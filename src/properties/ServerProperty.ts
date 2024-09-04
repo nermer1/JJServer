@@ -20,7 +20,8 @@ class Property implements IProperty {
             const stat = fs.statSync(fullPath);
 
             if (stat.isDirectory()) {
-                if (process.env['SERVER_ALIAS'] === 'product' && name === 'dev') return;
+                const serverAlias = process.env['SERVER_ALIAS'];
+                if ((serverAlias !== 'product' && name === 'prd') || (serverAlias === 'product' && name === 'dev')) return;
                 this.mergeEnv(fullPath);
             } else if (stat.isFile()) {
                 env.config({path: fullPath});

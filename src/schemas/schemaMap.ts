@@ -5,6 +5,7 @@ import {InterviewQuiz} from './InterviewQuiz.js';
 import {InterviewQuizSubmit} from './InterviewQuizSubmit.js';
 import {InterviewQuizTypes} from './InterviewQuizTypes.js';
 import {CustomerList} from './customerList.js';
+import {CustomerEtc} from './customerEtc.js';
 
 const schemas = {
     holiday: Holiday,
@@ -13,7 +14,8 @@ const schemas = {
     interviewQuiz: InterviewQuiz,
     interviewQuizSubmit: InterviewQuizSubmit,
     interviewQuizTypes: InterviewQuizTypes,
-    customerList: CustomerList
+    customerList: CustomerList,
+    customerEtc: CustomerEtc
 };
 
 export {schemas};
