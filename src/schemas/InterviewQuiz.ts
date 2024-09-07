@@ -1,5 +1,7 @@
+import {validate} from 'webpack';
 import ApiReturn from '../structure/ApiReturn.js';
 import CommonSchema from './CommonSchema.js';
+import ValidatorUtils from '../utils/ValidatorUtils.js';
 
 class InterviewQuizSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
@@ -7,18 +9,18 @@ class InterviewQuizSchema extends CommonSchema {
     }
 
     async findAll(params: DBParamsType) {
-        const option = params.option || '';
+        params = params || {};
+        const option = params.option || {};
         const apiReturn = new ApiReturn();
         const projectQuery: any = {
             question: 1,
             choice: 1,
             passage: 1,
-            answer: 1,
+            answer: params.option.all !== 'X' ? 0 : 1,
             point: 1,
             del: 1,
             type: '$interviewQuiz.text'
         };
-        if (option !== 'a') delete projectQuery.answer;
         const returnData = await this.model.aggregate([
             {
                 $lookup: {
@@ -29,7 +31,10 @@ class InterviewQuizSchema extends CommonSchema {
                 }
             },
             {
-                $unwind: '$interviewQuiz'
+                $unwind: {
+                    path: '$interviewQuiz',
+                    preserveNullAndEmptyArrays: true
+                }
             },
             {
                 $project: projectQuery
@@ -90,7 +95,8 @@ const InterviewQuiz = new InterviewQuizSchema('interviewQuiz', {
     },
     type: {
         required: true,
-        type: String
+        type: String,
+        validate: (v: string) => ValidatorUtils.isDigitString(v, 2)
     },
     del: {
         type: String

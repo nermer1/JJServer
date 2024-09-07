@@ -33,18 +33,16 @@ export default class DateUtils {
      */
     public static getMondayOfCurrentWeek() {
         const today = new Date();
-        const dayOfWeek = today.getDay(); // 0은 일요일, 1은 월요일, ..., 6은 토요일
+        const dayOfWeek = today.getDay();
 
-        const difference = dayOfWeek - 1; // 현재 요일에서 월요일까지의 차이
+        const difference = dayOfWeek - 1;
         const monday = new Date(today);
         monday.setDate(today.getDate() - difference);
 
-        // 만약 현재 요일이 일요일이면 이전 주의 월요일을 반환
         if (dayOfWeek === 0) {
             monday.setDate(today.getDate() - 6);
         }
 
-        // 날짜 객체로 반환
         return monday;
     }
 
