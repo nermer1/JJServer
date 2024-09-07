@@ -21,7 +21,7 @@ export default class DateUtils {
             case 'dd-MM-yyyy':
                 return `${day}-${month}-${year}`;
             case 'yyyy-MM-dd hh:mm:dd':
-                return `${year}${month}${day} ${hh}:${mm}:${ss}`;
+                return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
             default:
                 return `${year}${month}${day}`;
         }

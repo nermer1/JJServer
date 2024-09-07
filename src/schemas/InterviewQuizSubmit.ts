@@ -1,14 +1,14 @@
 import CommonSchema from './CommonSchema.js';
 import ApiReturn from '../structure/ApiReturn.js';
+import DateUtils from '../utils/DateUtils.js';
 
 class InterviewQuizSubmitSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
         super(schemaName, options);
     }
 
-    async getUserSubmitData(findName: string = '') {
+    async getUserSubmitData(option: ObjType) {
         const apiReturn = new ApiReturn();
-        const userAllQuery = findName ? {name: findName} : {};
         const returnData = await this.model.aggregate([
             {
                 $unwind: '$answer'
@@ -24,6 +24,22 @@ class InterviewQuizSubmitSchema extends CommonSchema {
                                     $eq: ['$_id', {$toObjectId: '$$answerKey'}]
                                 }
                             }
+                        },
+                        {
+                            $lookup: {
+                                from: 'interviewQuizTypes',
+                                localField: 'type',
+                                foreignField: 'type',
+                                as: 'quizType'
+                            }
+                        },
+                        {
+                            $unwind: '$quizType'
+                        },
+                        {
+                            $addFields: {
+                                type: '$quizType.text'
+                            }
                         }
                     ],
                     as: 'quizData'
@@ -33,11 +49,13 @@ class InterviewQuizSubmitSchema extends CommonSchema {
                 $unwind: '$quizData'
             },
             {
-                $match: userAllQuery
+                $match: option
             },
             {
                 $group: {
                     _id: '$_id',
+                    startTime: {$first: '$startTime'},
+                    endTime: {$first: '$endTime'},
                     name: {$first: '$name'},
                     totalScore: {$sum: '$quizData.point'},
                     score: {
@@ -64,7 +82,9 @@ class InterviewQuizSubmitSchema extends CommonSchema {
                     quizData: 1,
                     name: 1,
                     score: 1,
-                    totalScore: 1
+                    totalScore: 1,
+                    startTime: 1,
+                    endTime: 1
                 }
             }
         ]);
@@ -79,18 +99,14 @@ class InterviewQuizSubmitSchema extends CommonSchema {
             name: params.data.name,
             answer: params.data.tableData
         });
-        return await this.getUserSubmitData(params.data.name);
+        return await this.getUserSubmitData({name: params.data.name});
     }
 
-    async findAll(params?: DBParamsType) {
+    async findAll(params: DBParamsType) {
         const apiReturn = new ApiReturn();
-        let findUserName;
-        try {
-            findUserName = params?.data.name;
-        } catch (e) {
-            findUserName = '';
-        }
-        return await this.getUserSubmitData(findUserName);
+        params = params || {};
+        const option = params.option || {};
+        return await this.getUserSubmitData(option);
     }
 }
 
@@ -108,7 +124,9 @@ const InterviewQuizSubmit = new InterviewQuizSubmitSchema('interviewQuizSubmit',
     answer: {
         required: true,
         type: Array
-    }
+    },
+    startTime: {type: String, default: Date.now, set: (value: Date) => DateUtils.formatDate(value, 'yyyy-MM-dd hh:mm:dd').replace(/\d{2}:\d{2}$/, '00:00')},
+    endTime: {type: String, default: Date.now, set: (value: Date) => DateUtils.formatDate(value, 'yyyy-MM-dd hh:mm:dd')}
 });
 
 export {InterviewQuizSubmit};

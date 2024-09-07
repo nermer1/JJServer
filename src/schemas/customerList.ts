@@ -65,10 +65,11 @@ class CustomerSchema extends CommonSchema {
             apiReturn = await this.findAll(findParams);
             apiReturn.setReturnMessage('업데이트 성공');
             await session.commitTransaction();
-        } catch (error) {
+        } catch (error: any) {
             await session.abortTransaction();
             console.error(error);
             apiReturn.setReturnMessage('업데이트 실패');
+            apiReturn.setReturnErrorMessage(error.message);
         } finally {
             session.endSession();
         }

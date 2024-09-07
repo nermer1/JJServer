@@ -35,6 +35,7 @@ const pcSchema = new Schema(
         },
         mac: {
             type: String,
+            set: (value: string) => value.toUpperCase(),
             validate: {
                 validator: (value: string) => validator.isMacAddress(value),
                 message: 'Mac Address validation failed'
@@ -73,7 +74,7 @@ const unidocuSchema = new Schema(
 const versionControlSchema = new Schema(
     {
         type: {type: String, enum: ['git', 'svn', '']},
-        scope: {type: String, enum: ['internal', 'external', '']}
+        scope: {type: String, enum: ['internal', 'external', 'none', '']}
     },
     {_id: false}
 );
