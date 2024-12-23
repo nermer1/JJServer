@@ -50,4 +50,13 @@ export default class ValidatorUtils {
     public static isMacAddress(macAddress: string) {
         return /^([a-fA-F0-9]{2}\-){5}([a-fA-F0-9]{2})$/.test(macAddress);
     }
+
+    /**
+     *
+     * @param port
+     * @returns
+     */
+    public static isPort(port: string) {
+        return /^(6553[0-5]|655[0-2][0-9]|65[0-3][0-9]{2}|6[0-4][0-9]{3}|[1-5][0-9]{1,4}|[1-9][0-9]{1,3}|\d)$/.test(port);
+    }
 }

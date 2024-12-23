@@ -1,4 +1,3 @@
-import {validate} from 'webpack';
 import ApiReturn from '../structure/ApiReturn.js';
 import CommonSchema from './CommonSchema.js';
 import ValidatorUtils from '../utils/ValidatorUtils.js';
@@ -16,7 +15,13 @@ class InterviewQuizSchema extends CommonSchema {
             question: 1,
             choice: 1,
             passage: 1,
-            answer: params.option.all !== 'X' ? 0 : 1,
+            answer: {
+                $cond: {
+                    if: {$ne: [option.all, 'X']},
+                    then: '$$REMOVE',
+                    else: '$answer'
+                }
+            },
             point: 1,
             del: 1,
             type: '$interviewQuiz.text'

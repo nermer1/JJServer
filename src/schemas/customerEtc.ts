@@ -2,6 +2,7 @@ import {Schema} from 'mongoose';
 import ApiReturn from '../structure/ApiReturn.js';
 import {validatorUtil as validator} from '../utils/UnietangUtils.js';
 import CommonSchema from './CommonSchema.js';
+import {validate} from 'webpack';
 
 class CustomerEtcSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
@@ -12,7 +13,7 @@ class CustomerEtcSchema extends CommonSchema {
 const otpSchema = new Schema(
     {
         secret: {type: String, required: true},
-        mobile: {type: String, required: true},
+        mobile: {type: String},
         user: {type: String, required: true}
     },
     {_id: false}
@@ -48,16 +49,32 @@ const pcSchema = new Schema(
 const sshSchema = new Schema(
     {
         text: {
-            type: String
+            type: String,
+            required: true
         },
         listen_port: {
-            type: String
+            type: String,
+            required: true,
+            validate: {
+                validator: (value: string) => validator.isPort(value),
+                message: 'Port must be between 0 and 65535'
+            }
         },
         connect_port: {
-            type: String
+            type: String,
+            required: true,
+            validate: {
+                validator: (value: string) => validator.isPort(value),
+                message: 'Port must be between 0 and 65535'
+            }
         },
         ip: {
-            type: String
+            type: String,
+            required: true,
+            validate: {
+                validator: (value: string) => validator.isIPv4(value),
+                message: 'IPv4 validation failed'
+            }
         }
     },
     {_id: false}
@@ -81,11 +98,11 @@ const versionControlSchema = new Schema(
 
 const CustomerEtc = new CustomerEtcSchema('customerEtc', {
     code: {type: String},
-    otp: [otpSchema],
+    otp: {type: [otpSchema]},
     unidocu: {type: unidocuSchema, default: () => ({})},
-    pc: [pcSchema],
+    pc: {type: [pcSchema]},
     version_control: {type: versionControlSchema, default: () => ({})},
-    ssh: [sshSchema]
+    ssh: {type: [sshSchema]}
 });
 
 export {CustomerEtc};

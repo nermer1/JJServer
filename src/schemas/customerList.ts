@@ -171,7 +171,7 @@ const CustomerList = new CustomerSchema('customer', {
     type: {
         required: true,
         type: String,
-        enum: ['M', 'S', 'R']
+        enum: ['M', 'S', 'R', '']
     },
     ssh: {
         type: String

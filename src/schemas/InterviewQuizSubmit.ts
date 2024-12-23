@@ -1,6 +1,7 @@
 import CommonSchema from './CommonSchema.js';
 import ApiReturn from '../structure/ApiReturn.js';
 import DateUtils from '../utils/DateUtils.js';
+import {Schema} from 'mongoose';
 
 class InterviewQuizSubmitSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
@@ -115,6 +116,24 @@ class InterviewQuizSubmitSchema extends CommonSchema {
  * 이름 + 폰 4자리
  *
  */
+
+const answerSchema = new Schema(
+    {
+        key: {
+            type: String,
+            required: true
+        },
+        value: {
+            type: String,
+            required: true
+        },
+        text: {
+            type: String,
+            required: true
+        }
+    },
+    {_id: false}
+);
 const InterviewQuizSubmit = new InterviewQuizSubmitSchema('interviewQuizSubmit', {
     name: {
         required: true,
@@ -123,10 +142,14 @@ const InterviewQuizSubmit = new InterviewQuizSubmitSchema('interviewQuizSubmit',
     },
     answer: {
         required: true,
-        type: Array
+        type: [answerSchema]
     },
-    startTime: {type: String, default: Date.now, set: (value: Date) => DateUtils.formatDate(value, 'yyyy-MM-dd hh:mm:dd').replace(/\d{2}:\d{2}$/, '00:00')},
-    endTime: {type: String, default: Date.now, set: (value: Date) => DateUtils.formatDate(value, 'yyyy-MM-dd hh:mm:dd')}
+    startTime: {
+        type: String,
+        default: () => new Date(),
+        set: (value: Date) => DateUtils.formatDate(value, 'yyyy-MM-dd hh:mm:dd').replace(/\d{2}:\d{2}$/, '00:00')
+    },
+    endTime: {type: String, default: () => new Date(), set: (value: Date) => DateUtils.formatDate(value, 'yyyy-MM-dd hh:mm:dd')}
 });
 
 export {InterviewQuizSubmit};
