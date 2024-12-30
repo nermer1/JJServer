@@ -8,10 +8,10 @@ class GitHistoryDownloadService {
     private gitlabBaseUrl = 'http://gitlab/gitlab/api/v4/projects/';
     //private gitlabBaseUrl = 'http://unidocu/gitlab-test/api/v4/projects/';
     private projectId = '';
-    private accessToken = 'glpat-36yQp6P_vpxsx1dQJf7Y';
+    private accessToken = '';
 
     public async getExcelBuffer(req: Request): Promise<Buffer> {
-        const {projectId, fromDate, toDate} = req.query as any;
+        const {projectId, fromDate, toDate} = req.body;
         this.projectId = await this.getProjectId(projectId);
 
         const response: AxiosResponse<any> = await axios.get(`${this.gitlabBaseUrl}${this.projectId}/repository/commits`, {

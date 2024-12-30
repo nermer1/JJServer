@@ -19,10 +19,7 @@ class UnidocuLicenseController {
     }
 
     public getLicenseFile(req: Request, res: Response): void {
-        /**
-         * @todo data type 정의 필요
-         */
-        res.json({data: ''});
+        unidocuLicenseService.getLicenseFile(req, res);
     }
 }
 

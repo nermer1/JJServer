@@ -28,10 +28,10 @@ router.post('/license/encrypt/file', UnidocuLicenseController.getLicenseFile.bin
 router.post('/api/v1', PrdApiController.call.bind(PrdApiController));
 
 // rdp 테스트
-router.get('/rdp/download', RdpDownloadController.getFileDownload.bind(RdpDownloadController));
+router.post('/rdp/download', RdpDownloadController.getFileDownload.bind(RdpDownloadController));
 
 // git 이력 다운로드
-router.get('/git/download', GitHistoryDownloadController.getFileDownload.bind(GitHistoryDownloadController));
+router.post('/git/download', GitHistoryDownloadController.getFileDownload.bind(GitHistoryDownloadController));
 
 // google otp 가져오기
 router.post('/getOtpList', GoogleOtpController.getList.bind(GoogleOtpController));
