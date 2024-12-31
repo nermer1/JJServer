@@ -119,6 +119,9 @@ class ServerProperty extends Property {
                     user: this.getDecyptProperty(this.getString('SELENIUM_PORTAL_USER')),
                     password: this.getDecyptProperty(this.getString('SELENIUM_PORTAL_PASS'))
                 }
+            },
+            gitLap: {
+                pak: this.getDecyptProperty('49f52143ab095e9344216915bc9ed79c535341042a3d6835a4860d6659b39dd8')
             }
         };
     }

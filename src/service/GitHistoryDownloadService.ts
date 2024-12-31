@@ -1,6 +1,7 @@
 import axios, {AxiosResponse} from 'axios';
 import {Request, Response, NextFunction} from 'express';
 import {generatorUtils as generator} from '../utils/UnietangUtils.js';
+import {basicProperty} from '../properties/ServerProperty.js';
 import {dateUtil} from '../utils/UnietangUtils.js';
 
 class GitHistoryDownloadService {
@@ -8,26 +9,38 @@ class GitHistoryDownloadService {
     private gitlabBaseUrl = 'http://gitlab/gitlab/api/v4/projects/';
     //private gitlabBaseUrl = 'http://unidocu/gitlab-test/api/v4/projects/';
     private projectId = '';
-    private accessToken = '';
+    private accessToken = basicProperty.gitLap.pak;
 
     public async getExcelBuffer(req: Request): Promise<Buffer> {
         const {projectId, fromDate, toDate} = req.body;
+        let [page, per_page, allCommits] = [1, 100, []];
         this.projectId = await this.getProjectId(projectId);
 
-        const response: AxiosResponse<any> = await axios.get(`${this.gitlabBaseUrl}${this.projectId}/repository/commits`, {
-            headers: {
-                'PRIVATE-TOKEN': this.accessToken
-            },
-            params: {
-                ref_name: 'master',
-                since: new Date(fromDate).toISOString(),
-                until: new Date(toDate).toISOString()
-            }
-        });
+        while (true) {
+            const response: AxiosResponse<any> = await axios.get(`${this.gitlabBaseUrl}${this.projectId}/repository/commits`, {
+                headers: {
+                    'PRIVATE-TOKEN': this.accessToken
+                },
+                params: {
+                    ref_name: 'master',
+                    per_page,
+                    page,
+                    since: new Date(fromDate).toISOString(),
+                    until: new Date(toDate).toISOString()
+                }
+            });
 
-        response.data.forEach((commit: any) => {
-            commit.created_at = dateUtil.formatDate(new Date(commit.created_at), 'yyyy-MM-dd hh:mm:dd');
-        });
+            response.data.forEach((commit: any) => {
+                commit.created_at = dateUtil.formatDate(new Date(commit.created_at), 'yyyy-MM-dd hh:mm:dd');
+            });
+
+            allCommits = allCommits.concat(response.data);
+
+            const nextPage = response.headers['x-next-page'];
+            if (!nextPage) break;
+
+            page = parseInt(nextPage, 10);
+        }
 
         const excelInfo: ExcelDataType = {
             headers: [
@@ -36,7 +49,7 @@ class GitHistoryDownloadService {
                 {header: '수정내용 [접수번호] 내용', key: 'title', width: 100, data_header: 'title'}
             ],
             sheetName: 'GitLab History',
-            data: response.data
+            data: allCommits
         };
         return generator.exportToExcel(excelInfo);
     }
