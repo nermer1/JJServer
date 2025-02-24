@@ -5,7 +5,7 @@ import {basicProperty} from '../properties/ServerProperty.js';
 import {createServer} from 'http';
 import {router} from '../router/router.js';
 import scheduleManager from '../scheduler/mailSendScheduler.js';
-import db from '../db.js';
+//import db from '../db.js';
 import {initSocket} from './socket.js';
 
 class Server {
@@ -21,7 +21,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/', router);
 
-db.connect();
+//db.connect();
 
 // 소켓 서버 초기화
 const io = initSocket(httpServer);

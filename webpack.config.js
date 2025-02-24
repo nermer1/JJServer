@@ -2,7 +2,6 @@ import path from 'path';
 import {fileURLToPath} from 'url';
 import nodeExternals from 'webpack-node-externals';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
-import Dotenv from 'dotenv-webpack';
 import {EsbuildPlugin} from 'esbuild-loader';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -14,15 +13,12 @@ export default {
         outputModule: true
     },
     output: {
-        filename: 'bundle.cjs',
+        filename: 'bundle.js',
         path: path.resolve(__dirname, 'dist'),
         chunkFormat: 'module',
-        module: false
+        module: true
     },
     resolve: {
-        /* alias: {
-            './subscriptionGroupManager.js': path.resolve(__dirname, 'src/selenium/subscriptionGroupManager.js')
-        }, */
         modules: [path.resolve(__dirname, 'src'), 'node_modules'],
         extensions: ['.ts', '.js']
     },
@@ -32,7 +28,11 @@ export default {
                 test: /\.ts$/,
                 loader: 'esbuild-loader',
                 options: {
-                    target: 'es2015'
+                    target: 'es2020',
+                    format: 'esm'
+                },
+                parser: {
+                    commonjs: false
                 }
             }
         ]
@@ -52,7 +52,7 @@ export default {
     optimization: {
         minimize: true
     },
-    externals: [nodeExternals()],
+    externals: [nodeExternals({importType: 'module'})],
     mode: 'development',
     target: 'node'
 };

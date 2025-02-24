@@ -1,8 +1,6 @@
 import {Schema} from 'mongoose';
-import ApiReturn from '../structure/ApiReturn.js';
 import {validatorUtil as validator} from '../utils/UnietangUtils.js';
 import CommonSchema from './CommonSchema.js';
-import {validate} from 'webpack';
 
 class CustomerEtcSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
@@ -96,13 +94,21 @@ const versionControlSchema = new Schema(
     {_id: false}
 );
 
+const infoSchema = new Schema(
+    {
+        data: {type: String, default: ''}
+    },
+    {_id: false}
+);
+
 const CustomerEtc = new CustomerEtcSchema('customerEtc', {
     code: {type: String},
     otp: {type: [otpSchema]},
     unidocu: {type: unidocuSchema, default: () => ({})},
     pc: {type: [pcSchema]},
     version_control: {type: versionControlSchema, default: () => ({})},
-    ssh: {type: [sshSchema]}
+    ssh: {type: [sshSchema]},
+    info: {type: infoSchema, default: () => ({data: ''})}
 });
 
 export {CustomerEtc};

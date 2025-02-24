@@ -68,7 +68,7 @@ interface IProperty {
 }
 
 interface MongooseOption {
-    [key: string]: boolean;
+    [key: string]: boolean | string | number;
 }
 
 interface SeleniumMailParams {

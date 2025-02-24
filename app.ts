@@ -7,7 +7,8 @@ import {createServer} from 'http';
 import {Server, Socket} from 'socket.io';
 import {router} from './src/router/router.js';
 import scheduleManger from './src/scheduler/mailSendScheduler.js';
-import db from './src/db.js';
+//import db from './src/db.js';
+import DBFactory from './src/factory/DBFactory.js';
 
 /* let sslOptions = {};
 
@@ -33,7 +34,12 @@ app.use(express.json());
 app.use('/', router);
 app.set('socketio', io);
 
-db.connect();
+const mongo = DBFactory.createDB('mongo');
+mongo.connect();
+
+const redis = DBFactory.createDB('redis');
+redis.connect();
+//db.connect();
 
 const socketServer = app.get('socketio');
 

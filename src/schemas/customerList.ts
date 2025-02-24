@@ -3,6 +3,7 @@ import {validatorUtil as validator, objectUtil} from '../utils/UnietangUtils.js'
 import ApiReturn from '../structure/ApiReturn.js';
 import {CustomerEtc} from './customerEtc.js';
 import mongoose from 'mongoose';
+import {flatten} from 'flat';
 
 class CustomerSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
@@ -52,7 +53,7 @@ class CustomerSchema extends CommonSchema {
             etcData._id = dataId;
             etcData.code = inputData.code;
 
-            await this.model.findOneAndUpdate({_id: dataId}, inputData, {new: true, session});
+            await this.model.findOneAndUpdate({_id: dataId}, flatten(inputData), {new: true, session});
             const returnData = await CustomerEtc.model.findOneAndUpdate({_id: dataId}, etcData, {new: true, session, runValidators: true});
 
             const findParams: DBParamsType = {
