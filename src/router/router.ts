@@ -6,6 +6,7 @@ import PrdApiController from '../controller/PrdApiController.js';
 import RdpDownloadController from '../controller/RdpDownloadController.js';
 import GitHistoryDownloadController from '../controller/GitHistoryDownloadController.js';
 import GoogleOtpController from '../controller/GoogleOtpController.js';
+import LoginController from '../controller/LoginController.js';
 
 const router = express.Router();
 
@@ -38,6 +39,9 @@ router.post('/getOtpList', GoogleOtpController.getList.bind(GoogleOtpController)
 
 // sse 테스트
 router.get('/sse/hyperv', HypervConnectedController.test.bind(HypervConnectedController));
+
+// 로그인 테스트
+router.post('/login', LoginController.test.bind(LoginController));
 
 export {router};
 

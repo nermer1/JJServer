@@ -9,6 +9,7 @@ import {router} from './src/router/router.js';
 import scheduleManger from './src/scheduler/mailSendScheduler.js';
 //import db from './src/db.js';
 import DBFactory from './src/factory/DBFactory.js';
+import redisTest from './src/db/RedisTest.js';
 
 /* let sslOptions = {};
 
@@ -34,12 +35,14 @@ app.use(express.json());
 app.use('/', router);
 app.set('socketio', io);
 
-const mongo = DBFactory.createDB('mongo');
-mongo.connect();
+const mongoTest = DBFactory.createDB('mongo');
+mongoTest.connect();
+redisTest.connect();
 
-const redis = DBFactory.createDB('redis');
-redis.connect();
-//db.connect();
+redisTest.set('test', 'test');
+redisTest.get('test').then((data) => {
+    console.log(data);
+});
 
 const socketServer = app.get('socketio');
 

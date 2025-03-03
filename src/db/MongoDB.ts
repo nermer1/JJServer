@@ -20,10 +20,6 @@ class MongoDB extends BaseDB {
             .catch((e) => console.error(e));
     }
 
-    public getClient() {
-        throw new Error('Method not implemented.');
-    }
-
     public async close(): Promise<void> {
         mongoose.connection.close();
     }

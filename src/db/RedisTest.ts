@@ -1,24 +1,46 @@
 import {RedisClientType} from 'redis';
 import DBFactory from '../factory/DBFactory.js';
+import RedisDB from './RedisDB.js';
 
 class RedisTest {
-    private client: RedisClientType;
+    private isConnected: boolean = false;
+    public client: RedisClientType | null = null;
     private redis;
 
     constructor() {
         this.redis = DBFactory.createDB('redis');
-        this.redis.connect();
-        const client = this.redis.getClient();
-        if (!client) throw new Error('Failed to get Redis client');
-        this.client = client;
+        this.client = (this.redis as RedisDB).client;
+    }
+
+    public async connect(): Promise<void> {
+        if (this.isConnected) {
+            console.log('연결 되어 있음');
+            return;
+        }
+
+        try {
+            await this.redis.connect();
+        } catch (error) {
+            console.log('RedisDB 연결 실패:', error);
+            this.isConnected = false;
+            throw error;
+        }
     }
 
     public async get(key: string): Promise<any> {
-        return await this.client.get(key);
+        if (!this.client) throw new Error('Redis client is not connected');
+
+        try {
+            return await this.client.get(key);
+        } catch (error) {
+            console.error('Redis get error:', error);
+            throw error;
+        }
     }
 
-    public async set(key: string, value: string): Promise<void> {
-        await this.client.set(key, value);
+    public async set(key: string, value: string, option?: ObjAny): Promise<void> {
+        if (!this.client) throw new Error('Redis client is not connected');
+        await this.client.set(key, value, option);
     }
 }
 

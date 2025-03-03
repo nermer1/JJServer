@@ -3,24 +3,38 @@ import {basicProperty} from '../properties/ServerProperty.js';
 import BaseDB from './BaseDB.js';
 
 class RedisDB extends BaseDB {
-    private client: RedisClientType;
+    public client: RedisClientType;
 
     constructor() {
         super();
-        console.log('와우');
         this.client = createClient({url: `redis://192.168.11.17:6379`});
+
+        this.client.on('error', (err) => {
+            console.error(err);
+        });
     }
 
     public async connect(): Promise<void> {
-        await this.client.connect();
+        if (!this.client.isOpen) {
+            try {
+                await this.client.connect();
+                console.log('RedisDB 연결 성공');
+            } catch (error) {
+                console.error('RedisDB 연결 실패:', error);
+                throw error;
+            }
+        }
     }
 
     public async close(): Promise<void> {
-        await this.client.quit();
-    }
-
-    public getClient(): RedisClientType {
-        return this.client;
+        if (this.client.isOpen) {
+            try {
+                await this.client.quit();
+                console.log('Redis 연결 종료');
+            } catch (error) {
+                console.error('Redis 연결 종료 실패:', error);
+            }
+        }
     }
 }
 
