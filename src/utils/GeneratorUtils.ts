@@ -18,4 +18,16 @@ export default class GeneratorUtils {
 
         return workbook.xlsx.writeBuffer() as Promise<Buffer>;
     }
+
+    public static generateRandomString(length = 6, pattern = /[a-zA-Z0-9]/) {
+        const chars = GeneratorUtils.extractCharactersFromRegex(pattern);
+        if (!chars.length) throw new Error('Invalid character pattern');
+
+        return Array.from({length}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    }
+
+    public static extractCharactersFromRegex(pattern: RegExp) {
+        const allChars = String.fromCharCode(...Array.from({length: 94}, (_, i) => i + 33)); // Printable ASCII (33~126)
+        return allChars.split('').filter((char) => pattern.test(char));
+    }
 }

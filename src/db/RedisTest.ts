@@ -42,6 +42,11 @@ class RedisTest {
         if (!this.client) throw new Error('Redis client is not connected');
         await this.client.set(key, value, option);
     }
+
+    public async del(key: string): Promise<void> {
+        if (!this.client) throw new Error('Redis client is not connected');
+        await this.client.del(key);
+    }
 }
 
 const redisTest = new RedisTest();

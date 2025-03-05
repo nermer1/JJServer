@@ -5,7 +5,8 @@ export default class ValidatorUtils {
      * @returns
      */
     public static isEmail(email: string) {
-        return /^[a-zA-Z0-9]+([._%+-][a-zA-Z0-9]+)*@([\w-]+\.)+[\w-]{2,}$/.test(email);
+        //return /^[a-zA-Z0-9]+([._%+-][a-zA-Z0-9]+)*@([\w-]+\.)+[\w-]{2,}$/.test(email);
+        return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+$/.test(email);
     }
 
     /**

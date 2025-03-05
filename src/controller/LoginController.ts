@@ -1,76 +1,74 @@
 import {Request, Response, NextFunction} from 'express';
-import nodemailer from 'nodemailer';
-import redisTest from '../db/RedisTest';
+import redisTest from '../db/RedisTest.js';
+import {validatorUtil as validator, generatorUtils as generator} from '../utils/Utils.js';
+import {Users} from '../schemas/user.js';
+import ApiReturn from '../structure/ApiReturn.js';
+import JJMail from '../mail/sendMail.js';
 
 class LoginController {
-    public test(req: Request, res: Response): void {
-        const {mail, authNumber} = req.body;
+    public async test(req: Request, res: Response): Promise<void> {
+        let {email, authNumber} = req.body;
         // 이메일 검증(생략한다 안한다?) 존재하면 메일로 인증번호 전송?
+        // 이메일이 아닌 아이디면 @unipost.co.kr 기본값으로 붙여줌
         // 인증 번호 발송 및 레디스 저장
         // 인증 번호 넘어 오면 레디스 확인, 유효시간 확인
         // 성공 시 jwt 발급
         // 실패 시 에러 메시지
-        //res.json({data: unidocuLicenseService.getEncryptText(cryptoText)});
 
-        storeAuthNumber(mail);
+        const apiReturn = new ApiReturn();
 
-        //인증 번호 맞으면 ㅇㅋ
+        if (!!email && !authNumber) {
+            if (!validator.isEmail(email)) {
+                email += '@unipost.co.kr';
+            }
+            const hasEmail = await checkEmail(email);
+            if (!hasEmail) {
+                apiReturn.setReturnErrorMessage('입력한 정보를 다시 확인해주세요.');
+                res.json(apiReturn);
+                return;
+            }
+            const {ttl} = await storeAuthNumber(email);
+            apiReturn.put('ttl', ttl);
+        } else if (!!authNumber && !!email) {
+            const auth = await redisTest.get(authNumber);
+            if (!auth) {
+                apiReturn.setReturnErrorMessage('try again');
+            } else {
+                apiReturn.setReturnMessage('토큰 발행');
+                redisTest.del(authNumber);
+            }
+        } else {
+            apiReturn.setReturnErrorMessage('파라미터 확인 필요');
+        }
 
-        res.json({data: 'success'});
+        console.log('email:' + email, ' auth: ' + authNumber);
+        res.json(apiReturn);
     }
-}
-
-const transporter = nodemailer.createTransport({
-    host: '192.168.11.17',
-    port: 25,
-    secure: false
-});
-
-async function sendMailWithMustache(mail: string, authNumber: string) {
-    const info = await transporter.sendMail({
-        from: '"(주)유니포스트" <test@unidocu.unipost.co.kr>',
-        to: '',
-        subject: 'helper 인증 번호',
-        html: ''
-    });
 }
 
 // 우선 프로토타입, 동작만 확인 하는 식으로 작성 귀찮아 죽겠네
 async function storeAuthNumber(mail: string) {
     const authNumber = await generateUniqueAuthNumber();
-    await redisTest.set(authNumber, mail, {EX: 60}); // Redis에 저장
-    sendMailWithMustache(mail, authNumber); // 메일 전송
+    redisTest.set(authNumber, mail, {EX: 60}); // Redis에 저장
+
+    const ttl = await redisTest.client?.ttl(authNumber);
+
+    JJMail.sendMailWithHtml('(주)유니포스트" <test@unidocu.unipost.co.kr>', mail, 'helper 인증 번호', authNumber);
+
+    return {ttl};
 }
 
 async function generateUniqueAuthNumber(): Promise<string> {
-    const authNumber = generateRandomString();
+    const authNumber = generator.generateRandomString();
     const exists = await redisTest.get(authNumber);
 
-    if (exists) {
-        return generateUniqueAuthNumber();
-    }
+    if (exists) return generateUniqueAuthNumber();
 
     return authNumber;
 }
 
-function generateRandomString() {
-    // 6자리 a-zA-Z0-9 랜덤 추출
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-        const rand = Math.floor(Math.random() * 62); // 62개 문자 중 하나 선택
-
-        let charCode;
-        if (rand < 26) {
-            charCode = 65 + rand; // 'A' ~ 'Z' (65 ~ 90)
-        } else if (rand < 52) {
-            charCode = 97 + (rand - 26); // 'a' ~ 'z' (97 ~ 122)
-        } else {
-            charCode = 48 + (rand - 52); // '0' ~ '9' (48 ~ 57)
-        }
-
-        result += String.fromCharCode(charCode);
-    }
-    return result;
+async function checkEmail(email: string) {
+    return Users.hasRecord({USER_MAIL: email});
 }
 
 export default new LoginController();

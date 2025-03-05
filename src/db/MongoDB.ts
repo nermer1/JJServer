@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import {basicProperty} from '../properties/ServerProperty.js';
-import {stringUtil} from '../utils/UnietangUtils.js';
+import {stringUtil} from '../utils/Utils.js';
 import BaseDB from './BaseDB.js';
 
 class MongoDB extends BaseDB {

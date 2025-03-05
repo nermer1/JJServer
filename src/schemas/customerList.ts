@@ -1,5 +1,5 @@
 import CommonSchema from './CommonSchema.js';
-import {validatorUtil as validator, objectUtil} from '../utils/UnietangUtils.js';
+import {validatorUtil as validator, objectUtil} from '../utils/Utils.js';
 import ApiReturn from '../structure/ApiReturn.js';
 import {CustomerEtc} from './customerEtc.js';
 import mongoose from 'mongoose';

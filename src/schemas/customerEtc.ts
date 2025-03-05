@@ -1,5 +1,5 @@
 import {Schema} from 'mongoose';
-import {validatorUtil as validator} from '../utils/UnietangUtils.js';
+import {validatorUtil as validator} from '../utils/Utils.js';
 import CommonSchema from './CommonSchema.js';
 
 class CustomerEtcSchema extends CommonSchema {

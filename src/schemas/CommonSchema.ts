@@ -49,6 +49,10 @@ export default class CommonSchema {
         return apiReturn;
     }
 
+    async hasRecord(params: ObjAny) {
+        return !!(await this.model.exists(params));
+    }
+
     async getApiReturn(params: DBParamsType): Promise<ApiReturn> {
         switch (params.type) {
             case 'C':

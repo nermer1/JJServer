@@ -1,5 +1,5 @@
 import CommonSchema from './CommonSchema.js';
-import {validatorUtil as validator} from '../utils/UnietangUtils.js';
+import {validatorUtil as validator} from '../utils/Utils.js';
 
 class UserSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {

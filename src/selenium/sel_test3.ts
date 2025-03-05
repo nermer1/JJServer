@@ -1,7 +1,7 @@
 import {basicProperty} from '../properties/ServerProperty.js';
 import {webdriver, sendMail, Key, By, until} from './subscriptionGroupManager.js';
 import {axios} from '../modules/httpClient/httpClient.js';
-import {dateUtil} from '../utils/UnietangUtils.js';
+import {dateUtil} from '../utils/Utils.js';
 import moment from 'moment-timezone';
 
 const isTest = true;

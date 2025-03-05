@@ -39,11 +39,6 @@ const mongoTest = DBFactory.createDB('mongo');
 mongoTest.connect();
 redisTest.connect();
 
-redisTest.set('test', 'test');
-redisTest.get('test').then((data) => {
-    console.log(data);
-});
-
 const socketServer = app.get('socketio');
 
 socketServer.on('connection', function (socket: Socket) {

@@ -1,8 +1,8 @@
 import axios, {AxiosResponse} from 'axios';
 import {Request, Response, NextFunction} from 'express';
-import {generatorUtils as generator} from '../utils/UnietangUtils.js';
+import {generatorUtils as generator} from '../utils/Utils.js';
 import {basicProperty} from '../properties/ServerProperty.js';
-import {dateUtil} from '../utils/UnietangUtils.js';
+import {dateUtil} from '../utils/Utils.js';
 
 class GitHistoryDownloadService {
     // 경로, 토큰은 설정 값으로 받아와야 겠음
