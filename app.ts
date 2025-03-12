@@ -5,11 +5,14 @@ import {extenalProperty, basicProperty} from './src/properties/ServerProperty.js
 //import {createServer} from 'https';
 import {createServer} from 'http';
 import {Server, Socket} from 'socket.io';
-import {router} from './src/router/router.js';
+import router from './src/router/router.js';
 import scheduleManger from './src/scheduler/mailSendScheduler.js';
 //import db from './src/db.js';
 import DBFactory from './src/factory/DBFactory.js';
 import redisTest from './src/db/RedisTest.js';
+//import redoc from 'redoc-express';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
 
 /* let sslOptions = {};
 
@@ -34,6 +37,34 @@ app.use(cors());
 app.use(express.json());
 app.use('/', router);
 app.set('socketio', io);
+
+/* const swaggerSpec = JSON.parse(fs.readFileSync(new URL('./swagger.json', import.meta.url), 'utf-8'));
+
+app.get(
+    '/docs',
+    redoc({
+        title: 'API Documentation',
+        specUrl: '/swagger.json'
+    })
+);
+
+app.get('/swagger.json', (req, res) => {
+    res.json(swaggerSpec);
+}); */
+
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: '게시판 API 명세서',
+            version: '1.0.0'
+        }
+    },
+    apis: ['./swagger/*.swagger.js'] // files containing annotations as above
+};
+
+//const swaggerSpec = JSON.parse(fs.readFileSync(new URL('./swagger.json', import.meta.url), 'utf-8'));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerJsdoc(swaggerOptions)));
 
 const mongoTest = DBFactory.createDB('mongo');
 mongoTest.connect();

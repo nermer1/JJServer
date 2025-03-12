@@ -7,7 +7,7 @@ import {dateUtil} from '../utils/Utils.js';
 class GitHistoryDownloadService {
     // 경로, 토큰은 설정 값으로 받아와야 겠음
     private gitlabBaseUrl = 'http://gitlab/gitlab/api/v4/projects/';
-    //private gitlabBaseUrl = 'http://unidocu/gitlab-test/api/v4/projects/';
+    //private gitlabBaseUrl = 'http://unidocu/gitlab/api/v4/projects/';
     private projectId = '';
     private accessToken = basicProperty.gitLap.pak;
 

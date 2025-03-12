@@ -15,6 +15,8 @@ class LoginController {
         // 성공 시 jwt 발급
         // 실패 시 에러 메시지
 
+        console.log(email, authNumber);
+
         const apiReturn = new ApiReturn();
 
         if (!!email && !authNumber) {

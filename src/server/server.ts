@@ -3,7 +3,7 @@ import cors from 'cors';
 import fs from 'fs';
 import {basicProperty} from '../properties/ServerProperty.js';
 import {createServer} from 'http';
-import {router} from '../router/router.js';
+import router from '../router/router.js';
 import scheduleManager from '../scheduler/mailSendScheduler.js';
 //import db from '../db.js';
 import {initSocket} from './socket.js';
