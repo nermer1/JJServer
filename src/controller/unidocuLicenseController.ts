@@ -9,8 +9,8 @@ import unidocuLicenseService from '../service/UnidocuLicenseService.js';
 
 class UnidocuLicenseController {
     public getEncryptText(req: Request, res: Response): void {
-        const {cryptoText} = req.body;
-        res.json({data: unidocuLicenseService.getEncryptText(cryptoText)});
+        const {plainText} = req.body;
+        res.json({data: unidocuLicenseService.getEncryptText(plainText)});
     }
 
     public getDecryptText(req: Request, res: Response): void {

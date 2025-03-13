@@ -15,13 +15,13 @@ class Property implements IProperty {
     }
 
     private mergeEnv(dirPath: string) {
+        const serverAlias = process.env['SERVER_ALIAS'] || 'localhost';
         fs.readdirSync(dirPath).forEach((name: string) => {
             const fullPath = path.join(dirPath, name);
             const stat = fs.statSync(fullPath);
 
             if (stat.isDirectory()) {
-                const serverAlias = process.env['SERVER_ALIAS'];
-                if ((serverAlias !== 'product' && name === 'prd') || (serverAlias === 'product' && name === 'dev')) return;
+                if (serverAlias && serverAlias !== name) return;
                 this.mergeEnv(fullPath);
             } else if (stat.isFile()) {
                 env.config({path: fullPath});

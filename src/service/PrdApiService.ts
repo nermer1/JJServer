@@ -2,10 +2,10 @@
 import ApiReturn from '../structure/ApiReturn.js';
 
 class PrdApiService {
-    public async call(params: DBParamsType): Promise<ApiReturn> {
+    public async call(collectionName: string, params: DBParamsType): Promise<ApiReturn> {
         try {
-            const serviceName = params.name;
-            const schemaModule = await import(`../schemas/${serviceName}.js`);
+            //const serviceName = params.name;
+            const schemaModule = await import(`../schemas/${collectionName}.js`);
             //const schema = schemas[serviceName as keyof typeof schemas];
 
             const schemaKeys = Object.keys(schemaModule);

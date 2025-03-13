@@ -2,7 +2,7 @@ import {authenticator} from 'otplib';
 import ApiReturn from '../structure/ApiReturn.js';
 import {schemas} from '../schemas/schemaMap.js';
 
-class GoogleOtpService {
+class otpService {
     public async getList(customer: string) {
         const isAll = !customer;
         const apiReturn = new ApiReturn();
@@ -32,4 +32,4 @@ class GoogleOtpService {
     }
 }
 
-export default new GoogleOtpService();
+export default new otpService();

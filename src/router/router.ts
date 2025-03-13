@@ -1,27 +1,21 @@
 import express from 'express';
 
 import PrdApiController from '../controller/PrdApiController.js';
-import GoogleOtpController from '../controller/GoogleOtpController.js';
 import {router as login} from './login.js';
-import {router as license} from './license.js';
+import {router as licenses} from './licenses.js';
 import {router as hyperv} from './hyperv.js';
-import {router as download} from './download.js';
+import {router as downloads} from './downloads.js';
+import {router as otp} from './otp.js';
 
 const router = express.Router();
 
 // 라우터 분리 작업 시작
 router.use('/login', login);
-router.use('/license', license);
+router.use('/licenses', licenses);
 router.use('/hyperv', hyperv);
-router.use('/download', download);
-
-/**
- *
- */
-router.post('/api/v1', PrdApiController.call.bind(PrdApiController));
-
-// google otp 가져오기
-router.post('/getOtpList', GoogleOtpController.getList.bind(GoogleOtpController));
+router.use('/downloads', downloads);
+router.use('/otp', otp);
+router.post('/:collection', PrdApiController.call.bind(PrdApiController));
 
 export default router;
 

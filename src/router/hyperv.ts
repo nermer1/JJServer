@@ -3,7 +3,7 @@ import HypervConnectedController from '../controller/HypervConnectedController.j
 
 const router = express.Router();
 
-router.get('/connect/init', HypervConnectedController.getHyperVConnect.bind(HypervConnectedController));
+router.get('/connect/list', HypervConnectedController.getHyperVConnect.bind(HypervConnectedController));
 router.get('/connect/update', HypervConnectedController.getHyperVUpdate.bind(HypervConnectedController));
 router.get('/sse', HypervConnectedController.test.bind(HypervConnectedController));
 

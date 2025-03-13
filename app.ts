@@ -35,7 +35,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEve
 
 app.use(cors());
 app.use(express.json());
-app.use('/', router);
+app.use('/api/v1', router);
 app.set('socketio', io);
 
 /* const swaggerSpec = JSON.parse(fs.readFileSync(new URL('./swagger.json', import.meta.url), 'utf-8'));
@@ -56,7 +56,7 @@ const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: '게시판 API 명세서',
+            title: 'helper API 명세서',
             version: '1.0.0'
         }
     },

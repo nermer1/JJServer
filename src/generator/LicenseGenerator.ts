@@ -45,7 +45,7 @@ class LicenseGenerator {
         const companyName = licenseInfo.getCompanyName().toLowerCase();
         const applicantName = licenseInfo.getApplicant();
         const evaluationPart = licenseInfo.getLicenseType() === this.EVALUATION_CONST ? `evaluation_${expiredDate}_` : '';
-        return `${productName}_${evaluationPart}for_${companyName}(${applicantName}).lic`;
+        return encodeURIComponent(`${productName}_${evaluationPart}for_${companyName}(${applicantName}).lic`);
     }
 
     public static getLicenseInfo(productName: string, applicant: string, companyName: string, email: string): LicenseInfo {

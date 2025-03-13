@@ -5,9 +5,9 @@ import {Request, Response, NextFunction} from 'express';
 
 class UnidocuLicenseService {
     private uniPostCipher = new UniPostCipher(extenalProperty.getString('KEY_AES_CONST', ''), extenalProperty.getString('KEY_AES_IV_CONST', ''));
-    public getEncryptText(cryptoText: string): string | {error: string} {
+    public getEncryptText(plainText: string): string | {error: string} {
         try {
-            return this.uniPostCipher.encrypt(cryptoText);
+            return this.uniPostCipher.encrypt(plainText);
         } catch (e: any) {
             console.log('error: ', e.message);
             return {error: e.message};
@@ -31,6 +31,8 @@ class UnidocuLicenseService {
         if (licenseType === LicenseGenerator.LEGALITY_CONST) licenseInfo.setHostName(hostName);
         else licenseInfo.setExpiredDate(expiredDate);
         const {fileName, encryptedData} = LicenseGenerator.createLicense(licenseInfo);
+
+        console.log('fileName: ', fileName);
 
         res.setHeader('Content-Type', 'application/octet-stream');
         res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);

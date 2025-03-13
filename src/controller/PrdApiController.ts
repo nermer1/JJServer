@@ -3,8 +3,9 @@ import prdApiService from '../service/PrdApiService.js';
 
 class PrdApiController {
     public async call(req: Request, res: Response): Promise<void> {
+        const collectionName = req.params.collection;
         const params = req.body;
-        const returnData = await prdApiService.call(params);
+        const returnData = await prdApiService.call(collectionName, params);
         res.json(returnData);
     }
 }
