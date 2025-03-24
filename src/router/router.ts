@@ -1,7 +1,8 @@
 import express from 'express';
 
 import PrdApiController from '../controller/PrdApiController.js';
-import {router as login} from './login.js';
+import LoginController from '../controller/LoginController.js';
+//import {router as login} from './login.js';
 import {router as licenses} from './licenses.js';
 import {router as hyperv} from './hyperv.js';
 import {router as downloads} from './downloads.js';
@@ -10,11 +11,12 @@ import {router as otp} from './otp.js';
 const router = express.Router();
 
 // 라우터 분리 작업 시작
-router.use('/login', login);
+//router.use('/login', login);
 router.use('/licenses', licenses);
 router.use('/hyperv', hyperv);
 router.use('/downloads', downloads);
 router.use('/otp', otp);
+router.post('/login', LoginController.test.bind(LoginController));
 router.post('/:collection', PrdApiController.call.bind(PrdApiController));
 
 export default router;

@@ -13,6 +13,7 @@ import redisTest from './src/db/RedisTest.js';
 //import redoc from 'redoc-express';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
+import cookieParser from 'cookie-parser';
 
 /* let sslOptions = {};
 
@@ -33,7 +34,14 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEve
     cors: {origin: '*'}
 });
 
-app.use(cors());
+app.use(
+    cors({
+        origin: '*',
+        credentials: true
+    })
+);
+
+app.use(cookieParser());
 app.use(express.json());
 app.use('/api/v1', router);
 app.set('socketio', io);

@@ -4,6 +4,9 @@ import {validatorUtil as validator, generatorUtils as generator} from '../utils/
 import {Users} from '../schemas/user.js';
 import ApiReturn from '../structure/ApiReturn.js';
 import JJMail from '../mail/sendMail.js';
+import jwt from 'jsonwebtoken';
+
+// 테스트 중
 
 class LoginController {
     public async test(req: Request, res: Response): Promise<void> {
@@ -36,6 +39,17 @@ class LoginController {
             if (!auth) {
                 apiReturn.setReturnErrorMessage('try again');
             } else {
+                // 토큰 발행
+
+                const secretKey = 'test';
+                const payload = {
+                    userId: 'permes@unipost.co.kr',
+                    isAdmin: 'X'
+                };
+                const token = jwt.sign(payload, secretKey, {expiresIn: '1h'});
+
+                res.cookie('token', token, {httpOnly: true});
+                apiReturn.put('token', token);
                 apiReturn.setReturnMessage('토큰 발행');
                 redisTest.del(authNumber);
             }
