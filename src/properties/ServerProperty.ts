@@ -8,6 +8,7 @@ import UniPostCipher from '../cipher/UniPostCipher.js';
  */
 class Property implements IProperty {
     private dirPath;
+    public serverAlias = 'localhost';
 
     public constructor(dirPath: string) {
         this.dirPath = dirPath;
@@ -15,13 +16,13 @@ class Property implements IProperty {
     }
 
     private mergeEnv(dirPath: string) {
-        const serverAlias = process.env['SERVER_ALIAS'] || 'localhost';
+        this.serverAlias = process.env['SERVER_ALIAS'] || 'localhost';
         fs.readdirSync(dirPath).forEach((name: string) => {
             const fullPath = path.join(dirPath, name);
             const stat = fs.statSync(fullPath);
 
             if (stat.isDirectory()) {
-                if (serverAlias && serverAlias !== name) return;
+                if (this.serverAlias !== name) return;
                 this.mergeEnv(fullPath);
             } else if (stat.isFile()) {
                 env.config({path: fullPath});
@@ -97,7 +98,8 @@ class ServerProperty extends Property {
     public getProperty() {
         return {
             server: {
-                port: this.getString('PROD_PORT', '3000')
+                port: this.getString('PROD_PORT', '3000'),
+                alias: this.getString('SERVER_ALIAS', this.serverAlias)
             },
             db: {
                 user: this.getDecyptProperty(this.getString('DB_USER')),
@@ -139,7 +141,7 @@ class ServerProperty extends Property {
     }
 }
 
-const extenalProperty = ServerProperty.getInstance();
+const externalProperty = ServerProperty.getInstance();
 const basicProperty = ServerProperty.getInstance().getProperty();
 
-export {extenalProperty, basicProperty};
+export {externalProperty, basicProperty};

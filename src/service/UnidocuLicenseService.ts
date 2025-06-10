@@ -1,10 +1,10 @@
 import UniPostCipher from '../cipher/UniPostCipher.js';
 import LicenseGenerator from '../generator/LicenseGenerator.js';
-import {extenalProperty} from '../properties/ServerProperty.js';
+import {externalProperty} from '../properties/ServerProperty.js';
 import {Request, Response, NextFunction} from 'express';
 
 class UnidocuLicenseService {
-    private uniPostCipher = new UniPostCipher(extenalProperty.getString('KEY_AES_CONST', ''), extenalProperty.getString('KEY_AES_IV_CONST', ''));
+    private uniPostCipher = new UniPostCipher(externalProperty.getString('KEY_AES_CONST', ''), externalProperty.getString('KEY_AES_IV_CONST', ''));
     public getEncryptText(plainText: string): string | {error: string} {
         try {
             return this.uniPostCipher.encrypt(plainText);

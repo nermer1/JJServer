@@ -38,19 +38,20 @@ export default {
         ]
     },
     plugins: [
-        new EsbuildPlugin(),
         new CopyWebpackPlugin({
             patterns: [
                 {from: 'config', to: 'config'},
                 {from: 'src/ui/template/mustache', to: 'src/ui/template/mustache'},
                 {from: 'package.json', to: 'package.json'},
                 {from: 'package-build.json', to: 'package-build.json'},
-                {from: 'package-lock.json', to: 'package-lock.json'}
+                {from: 'package-lock.json', to: 'package-lock.json'},
+                {from: 'swagger', to: 'swagger'}
             ]
         })
     ],
     optimization: {
-        minimize: true
+        minimize: true,
+        minimizer: [new EsbuildPlugin({exclude: /swagger\/.*\.js$/})]
     },
     externals: [nodeExternals({importType: 'module'})],
     mode: 'development',

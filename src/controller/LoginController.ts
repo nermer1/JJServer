@@ -22,6 +22,7 @@ class LoginController {
 
         const apiReturn = new ApiReturn();
 
+        // 이메일 검증
         if (!!email && !authNumber) {
             if (!validator.isEmail(email)) {
                 email += '@unipost.co.kr';
@@ -32,7 +33,7 @@ class LoginController {
                 res.json(apiReturn);
                 return;
             }
-            const {ttl} = await storeAuthNumber(email);
+            const {ttl} = await storeAuthNumber(email); // 인증 시간 내려줌
             apiReturn.put('ttl', ttl);
         } else if (!!authNumber && !!email) {
             const auth = await redisTest.get(authNumber);
@@ -40,11 +41,16 @@ class LoginController {
                 apiReturn.setReturnErrorMessage('try again');
             } else {
                 // 토큰 발행
-
+                // 시크릿키는 환경변수로 따로 빼야함
                 const secretKey = 'test';
+
+                // email로 사원 정보 조회?
+
+                //Users
+                const userInfo = (await Users.findAll({option: {USER_MAIL: email}} as DBParamsType)).getTableData()[0];
                 const payload = {
-                    userId: 'permes@unipost.co.kr',
-                    isAdmin: 'X'
+                    userId: userInfo.USER_MAIL,
+                    isAdmin: userInfo.USER_ROLE
                 };
                 const token = jwt.sign(payload, secretKey, {expiresIn: '1h'});
 

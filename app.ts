@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
-import {extenalProperty, basicProperty} from './src/properties/ServerProperty.js';
+import {externalProperty, basicProperty} from './src/properties/ServerProperty.js';
 //import {createServer} from 'https';
 import {createServer} from 'http';
 import {Server, Socket} from 'socket.io';
@@ -19,8 +19,8 @@ import cookieParser from 'cookie-parser';
 
 try {
     sslOptions = {
-        key: fs.readFileSync(extenalProperty.getString('PROD_SSL_KEY')),
-        cert: fs.readFileSync(extenalProperty.getString('PROD_SSL_CERT'))
+        key: fs.readFileSync(externalProperty.getString('PROD_SSL_KEY')),
+        cert: fs.readFileSync(externalProperty.getString('PROD_SSL_CERT'))
     };
 } catch (e) {
     console.log(e);
@@ -46,33 +46,31 @@ app.use(express.json());
 app.use('/api/v1', router);
 app.set('socketio', io);
 
-/* const swaggerSpec = JSON.parse(fs.readFileSync(new URL('./swagger.json', import.meta.url), 'utf-8'));
-
-app.get(
-    '/docs',
-    redoc({
-        title: 'API Documentation',
-        specUrl: '/swagger.json'
-    })
-);
-
-app.get('/swagger.json', (req, res) => {
-    res.json(swaggerSpec);
-}); */
-
-const swaggerOptions = {
-    definition: {
-        openapi: '3.0.0',
-        info: {
-            title: 'helper API 명세서',
-            version: '1.0.0'
-        }
-    },
-    apis: ['./swagger/*.swagger.js'] // files containing annotations as above
+const swaggerApiHost: ObjType = {
+    localhost: `http://localhost:${basicProperty.server.port}`,
+    alpha: 'https://helper.unipost.co.kr:9443/server/',
+    dev: 'https://helper.unipost.co.kr:8443/server/',
+    prd: 'https://helper.unipost.co.kr/server/'
 };
 
-//const swaggerSpec = JSON.parse(fs.readFileSync(new URL('./swagger.json', import.meta.url), 'utf-8'));
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerJsdoc(swaggerOptions)));
+const apiUrl = swaggerApiHost[basicProperty.server.alias] || swaggerApiHost.localhost;
+
+const swaggerOptions = {
+    doc: {
+        definition: {
+            openapi: '3.0.0',
+            info: {
+                title: 'helper API 명세서',
+                version: '1.0.0'
+            },
+            servers: [{url: apiUrl}]
+        },
+        apis: ['./swagger/*.swagger.js']
+    },
+    swagger: {}
+};
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerJsdoc(swaggerOptions.doc), swaggerOptions.swagger));
 
 const mongoTest = DBFactory.createDB('mongo');
 mongoTest.connect();
