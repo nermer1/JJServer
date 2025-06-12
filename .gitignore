@@ -4,6 +4,7 @@
 /target
 *.js
 !webpack.config.js
+!test.swagger.js
 *.map
 app.tar.gz
 /*.idea
