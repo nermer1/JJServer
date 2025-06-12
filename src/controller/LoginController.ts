@@ -22,11 +22,10 @@ class LoginController {
 
         const apiReturn = new ApiReturn();
 
+        if (!validator.isEmail(email)) email += '@unipost.co.kr';
+
         // 이메일 검증
         if (!!email && !authNumber) {
-            if (!validator.isEmail(email)) {
-                email += '@unipost.co.kr';
-            }
             const hasEmail = await checkEmail(email);
             if (!hasEmail) {
                 apiReturn.setReturnErrorMessage('입력한 정보를 다시 확인해주세요.');
@@ -47,11 +46,9 @@ class LoginController {
                 // email로 사원 정보 조회?
 
                 //Users
-                const userInfo = (await Users.findAll({option: {USER_MAIL: email}} as DBParamsType)).getTableData()[0];
-                const payload = {
-                    userId: userInfo.USER_MAIL,
-                    isAdmin: userInfo.USER_ROLE
-                };
+                const userInfo = await Users.findAll({option: {USER_MAIL: email}} as DBParamsType);
+                const {USER_MAIL: userId, USER_ROLE: isAdmin} = userInfo.getTableData()[0];
+                const payload = {userId, isAdmin};
                 const token = jwt.sign(payload, secretKey, {expiresIn: '1h'});
 
                 res.cookie('token', token, {httpOnly: true});
