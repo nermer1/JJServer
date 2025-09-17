@@ -3,13 +3,12 @@ import ApiReturn from '../structure/ApiReturn.js';
 import {schemas} from '../schemas/schemaMap.js';
 
 class otpService {
-    public async getList(customer: string) {
-        const isAll = !customer;
+    public async getList(customers: Array<String>) {
         const apiReturn = new ApiReturn();
         const params: DBParamsType = {
             name: 'customerList',
             type: 'R',
-            option: isAll ? {} : {code: customer},
+            option: {code: {$in: customers}},
             data: {
                 tableData: []
             }
@@ -18,11 +17,24 @@ class otpService {
         try {
             const schema = schemas.customerList;
             const otpListData = await schema.getOptList(params);
-            if (isAll) return otpListData;
             const tableData = otpListData.getTableData();
-            const otps = tableData[0].otp.map(({secret, user, mobile}: any) => {
-                return {user, mobile, otp: authenticator.generate(secret)};
+
+            const groupedData = tableData.reduce((acc, item) => {
+                const customerCode = item.customer.code;
+                const otpDetails = item.otp.map(({secret, user, mobile}: any) => ({
+                    user,
+                    mobile,
+                    otp: authenticator.generate(secret)
+                }));
+                acc[customerCode] = (acc[customerCode] || []).concat(otpDetails);
+
+                return acc;
+            }, {});
+
+            const otps = Object.entries(groupedData).map(([key, value]) => {
+                return {[key]: value};
             });
+
             apiReturn.put('timeUse', authenticator.timeUsed());
             apiReturn.setTableData(otps);
         } catch (e) {

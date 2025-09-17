@@ -93,7 +93,7 @@ class CustomerSchema extends CommonSchema {
         const customerData = (await this.findAll(params)).getTableData();
         const returnData = customerData.reduce((arr, data) => {
             const otpArr = data.etc.otp;
-            if (otpArr.length != 0) {
+            if (otpArr.length !== 0) {
                 arr.push({
                     otp: data.etc.otp,
                     customer: {
@@ -117,6 +117,9 @@ class CustomerSchema extends CommonSchema {
 
         const returnData = await this.model.aggregate([
             {
+                $match: option
+            },
+            {
                 $lookup: {
                     from: 'customerEtc',
                     localField: '_id',
@@ -137,9 +140,6 @@ class CustomerSchema extends CommonSchema {
             },
             {
                 $project: {'etc._id': 0, customerEtc: 0}
-            },
-            {
-                $match: option
             }
         ]);
 

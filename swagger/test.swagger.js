@@ -130,8 +130,8 @@
  *            type: object
  *            properties:
  *              customer:
- *                type: string
- *                example: "unipost"
+ *                type: Array<string>
+ *                example: ["unipost"]
  *    responses:
  *      200:
  *        description: 성공
