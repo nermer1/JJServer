@@ -37,7 +37,7 @@ class LoginController {
         } else if (!!authNumber && !!email) {
             const auth = await redisTest.get(authNumber);
             if (!auth) {
-                apiReturn.setReturnErrorMessage('try again');
+                apiReturn.setReturnErrorMessage('확실 해요?');
             } else {
                 // 토큰 발행
                 // 시크릿키는 환경변수로 따로 빼야함
@@ -46,8 +46,8 @@ class LoginController {
                 // email로 사원 정보 조회?
 
                 //Users
-                const userInfo = await Users.findAll({option: {USER_MAIL: email}} as DBParamsType);
-                const {USER_MAIL: userId, USER_ROLE: isAdmin} = userInfo.getTableData()[0];
+                const userInfo = await Users.findAll({option: {email}} as DBParamsType);
+                const {email: userId, role: isAdmin} = userInfo.getTableData()[0];
                 const payload = {userId, isAdmin};
                 const token = jwt.sign(payload, secretKey, {expiresIn: '1h'});
 
@@ -87,7 +87,7 @@ async function generateUniqueAuthNumber(): Promise<string> {
 }
 
 async function checkEmail(email: string) {
-    return Users.hasRecord({USER_MAIL: email});
+    return Users.hasRecord({email});
 }
 
 export default new LoginController();

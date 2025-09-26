@@ -1,9 +1,22 @@
 import CommonSchema from './CommonSchema.js';
 import {validatorUtil as validator} from '../utils/Utils.js';
+import {Schema} from 'mongoose';
+import ApiReturn from '../structure/ApiReturn.js';
 
 class UserSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
         super(schemaName, options);
+    }
+
+    async findAll(params: DBParamsType) {
+        params = params || {};
+        const option = params.option || {};
+        const apiReturn = new ApiReturn();
+        const returnData = await this.model.find(option).populate('department_id');
+
+        apiReturn.setTableData(returnData);
+        apiReturn.setReturnMessage('조회 성공');
+        return apiReturn;
     }
 }
 
@@ -36,13 +49,16 @@ class UserSchema extends CommonSchema {
  * 생일자 알림
  */
 
+const POSITION_LIST = ['매니저', '상무', '전무', '대표이사'];
+const TITLE_LIST = ['팀장', '파트장', '그룹장', '부사장', '대표이사'];
+
 const Users = new UserSchema('users', {
-    USER_NAME: {required: true, type: String},
-    USER_BIRTH: {type: String},
-    USER_HOSTNAME: {type: String, default: ''},
-    USER_ID: {required: true, type: String},
-    USER_JOINUS: {type: String},
-    USER_MAIL: {
+    name: {required: true, type: String},
+    birthDate: {type: String},
+    hostname: {type: String, default: ''},
+    userId: {required: true, type: String},
+    createdAt: {type: String},
+    email: {
         required: true,
         type: String,
         validate: {
@@ -50,13 +66,13 @@ const Users = new UserSchema('users', {
             message: 'Email validation failed'
         }
     },
-    USER_NICKNAME: {
+    nickname: {
         type: String,
-        default: function (this: {USER_NAME: string}): string {
-            return this.USER_NAME;
+        default: function (this: {name: string}): string {
+            return this.name;
         }
     },
-    USER_PHONE: {
+    phoneNumber: {
         unique: true,
         type: String,
         validate: {
@@ -64,10 +80,30 @@ const Users = new UserSchema('users', {
             message: 'Mobile number validation failed'
         }
     },
-    USER_POSISTION: {required: true, type: String},
-    USER_GROUP: {required: true, type: String},
-    USER_ROLE: {required: true, type: String, default: 'basic'},
-    DEL_FLAG: {type: String, default: ''}
+    position: {
+        required: true,
+        type: String,
+        enum: {
+            values: POSITION_LIST,
+            message: '{VALUE} is not supported'
+        }
+    },
+    title: {
+        type: String,
+        enum: {
+            values: TITLE_LIST,
+            message: '{VALUE} is not supported'
+        },
+        default: null
+    },
+    department_id: {
+        type: Schema.Types.ObjectId,
+        ref: 'department',
+        default: null
+    },
+    group: {required: true, type: String},
+    role: {required: true, type: String, default: 'basic'},
+    deleted: {type: String, default: ''}
 });
 
 export {Users};

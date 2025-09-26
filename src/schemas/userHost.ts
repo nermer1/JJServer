@@ -11,8 +11,8 @@ class UserHostSchema extends CommonSchema {
             {
                 $lookup: {
                     from: 'users', // 조인할 컬렉션명
-                    localField: 'USER_ID',
-                    foreignField: 'USER_ID',
+                    localField: 'userId',
+                    foreignField: 'userId',
                     as: 'user_info'
                 }
             },
@@ -21,8 +21,8 @@ class UserHostSchema extends CommonSchema {
             },
             {
                 $project: {
-                    USER_HOST: 1,
-                    USER_NAME: '$user_info.USER_NAME' // users 컬렉션에서 가져온 nickname 필드
+                    userID: 1,
+                    name: '$user_info.name' // users 컬렉션에서 가져온 nickname 필드
                 }
             }
         ]);
@@ -30,12 +30,12 @@ class UserHostSchema extends CommonSchema {
 }
 
 const UserHost = new UserHostSchema('userHost', {
-    USER_ID: {
+    userId: {
         required: true,
         unique: true,
         type: String
     },
-    USER_HOST: {
+    hostname: {
         required: true,
         type: String
     }

@@ -6,7 +6,11 @@ export default class CommonSchema {
     model;
 
     constructor(schemaName: string, options = {}) {
-        this.schema = new Schema(options);
+        if (options instanceof Schema) {
+            this.schema = options;
+        } else {
+            this.schema = new Schema(options);
+        }
         this.model = mongoose.model(schemaName, this.schema, schemaName);
     }
 

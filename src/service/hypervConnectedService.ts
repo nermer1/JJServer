@@ -48,7 +48,7 @@ class HypervConnectedService {
     private async getHostnameToUserName(key: string): Promise<string> {
         if (Object.keys(this.hostData).length > 0) return this.hostData[key.toLowerCase()] || key;
         this.hostData = (await schemas.userHost.getUserHost()).reduce((a: ObjType, b: any) => {
-            a[b.USER_HOST] = b.USER_NAME;
+            a[b.hostname] = b.name;
             return a;
         }, {});
 
