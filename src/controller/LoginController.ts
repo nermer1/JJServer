@@ -1,7 +1,7 @@
 import {Request, Response, NextFunction} from 'express';
 import redisTest from '../db/RedisTest.js';
 import {validatorUtil as validator, generatorUtils as generator} from '../utils/Utils.js';
-import {Users} from '../schemas/user.js';
+import {Users} from '../schemas/users.js';
 import ApiReturn from '../structure/ApiReturn.js';
 import JJMail from '../mail/sendMail.js';
 import jwt from 'jsonwebtoken';

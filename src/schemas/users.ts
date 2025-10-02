@@ -50,7 +50,7 @@ class UserSchema extends CommonSchema {
  */
 
 const POSITION_LIST = ['매니저', '상무', '전무', '대표이사'];
-const TITLE_LIST = ['팀장', '파트장', '그룹장', '부사장', '대표이사'];
+const TITLE_LIST = ['', '팀장', '파트장', '그룹장', '부사장', '대표이사'];
 
 const Users = new UserSchema('users', {
     name: {required: true, type: String},
@@ -101,8 +101,12 @@ const Users = new UserSchema('users', {
         ref: 'department',
         default: null
     },
-    group: {required: true, type: String},
-    role: {required: true, type: String, default: 'basic'},
+    roles: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'role'
+        }
+    ],
     deleted: {type: String, default: ''}
 });
 

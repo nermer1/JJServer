@@ -7,7 +7,7 @@ class DepartmentSchema extends CommonSchema {
     }
 }
 
-const schema = new Schema({
+const Department = new DepartmentSchema('department', {
     code: {
         type: String,
         required: [true, '부서 코드는 필수입니다.'],
@@ -19,11 +19,16 @@ const schema = new Schema({
         type: String,
         required: [true, '부서 이름은 필수입니다.'],
         trim: true
+    },
+    parent_id: {
+        type: Schema.Types.ObjectId,
+        ref: 'department',
+        default: null
+    },
+    parent_code: {
+        type: String,
+        default: null
     }
 });
-
-schema.add({children: [schema]});
-
-const Department = new DepartmentSchema('department', schema);
 
 export {Department};

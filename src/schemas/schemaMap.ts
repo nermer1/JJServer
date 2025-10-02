@@ -1,12 +1,14 @@
 import {Holiday} from '../schemas/holiday.js';
-import {Users} from '../schemas/user.js';
+import {Users} from './users.js';
 import {UserHost} from '../schemas/userHost.js';
 import {InterviewQuiz} from './interviewQuiz.js';
 import {InterviewQuizSubmit} from './interviewQuizSubmit.js';
 import {InterviewQuizTypes} from './interviewQuizTypes.js';
 import {CustomerList} from './customerList.js';
 import {CustomerEtc} from './customerEtc.js';
-import {Department} from './Department.js';
+import {Department} from './department.js';
+import {Permission} from './permission.js';
+import {Role} from './role.js';
 
 const schemas = {
     holiday: Holiday,
@@ -17,7 +19,9 @@ const schemas = {
     interviewQuizSubmit: InterviewQuizSubmit,
     interviewQuizTypes: InterviewQuizTypes,
     customerList: CustomerList,
-    customerEtc: CustomerEtc
+    customerEtc: CustomerEtc,
+    permission: Permission,
+    role: Role
 };
 
 export {schemas};
