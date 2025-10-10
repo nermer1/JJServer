@@ -1,8 +1,12 @@
 import {Request, Response, NextFunction} from 'express';
 import gitHistoryDownloadService from '../service/GitHistoryDownloadService.js';
 
+interface RequestBody {
+    projectId: string;
+}
+
 class GitHistoryDownloadController {
-    public async getFileDownload(req: Request, res: Response): Promise<void> {
+    public async getFileDownload(req: Request<{}, {}, RequestBody>, res: Response): Promise<void> {
         try {
             const {projectId} = req.body;
             const fileName = projectId + '_gitlab-history.xlsx';
