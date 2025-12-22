@@ -14,6 +14,7 @@ import redisTest from './src/db/RedisTest.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import cookieParser from 'cookie-parser';
+import {router as hyperv} from './src/router/hyperv.js';
 
 /* let sslOptions = {};
 
@@ -44,6 +45,7 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use('/api/v1', router);
+app.use('/hyperv', hyperv);
 app.set('socketio', io);
 
 const swaggerApiHost: ObjType = {

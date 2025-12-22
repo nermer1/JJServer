@@ -81,13 +81,13 @@ async function generateUniqueAuthNumber(): Promise<string> {
     const authNumber = generator.generateRandomString();
     const exists = await redisTest.get(authNumber);
 
-    if (exists) return generateUniqueAuthNumber();
+    if (exists) return await generateUniqueAuthNumber();
 
     return authNumber;
 }
 
 async function checkEmail(email: string) {
-    return Users.hasRecord({email});
+    return await Users.hasRecord({email});
 }
 
 export default new LoginController();

@@ -9,8 +9,9 @@ class HypervConnectedController {
     public getHyperVUpdate(req: Request, res: Response): void {
         //const socket = req.app.get('socketio');
         const data = req.query as ObjType;
-        hypervConnectedService.getHyperVUpdate(data);
-        //hypervConnectedService.getHyperVUpdate(socket, data);
+        hypervConnectedService.getHyperVUpdate(data).catch(() => {
+            res.status(500).json({error: 'Internal Server Error'});
+        });
         res.json({success: true});
     }
 

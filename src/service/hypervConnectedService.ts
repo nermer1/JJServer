@@ -5,10 +5,10 @@ import {schemas} from '../schemas/schemaMap.js';
 class HypervConnectedService {
     private companycomputer: Tt = {};
     private hostData: ObjType = {};
-    private sseClients: Response[] = [];
+    private readonly sseClients: Response[] = [];
 
-    public getHypervStatus(): Array<Ttt> {
-        return Object.keys(this.companycomputer).reduce((arr: Array<Ttt>, key, idx) => {
+    public getHypervStatus(): Ttt[] {
+        return Object.keys(this.companycomputer).reduce((arr: Ttt[], key, idx) => {
             const item = this.companycomputer[key];
             item.id = idx;
             arr.push(item);
