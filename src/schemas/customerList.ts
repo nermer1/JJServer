@@ -16,7 +16,7 @@ class CustomerSchema extends CommonSchema {
         session.startTransaction();
 
         try {
-            let returnData = await this.model.create(params.data.tableData, {session});
+            const returnData = await this.model.create(params.data.tableData, {session});
             const etcData = params.data.tableData[0].etc;
             etcData._id = returnData[0]._id;
             etcData.code = returnData[0].code;
@@ -91,7 +91,7 @@ class CustomerSchema extends CommonSchema {
     async getOptList(params: DBParamsType) {
         const apiReturn = new ApiReturn();
         const customerData = (await this.findAll(params)).getTableData();
-        const returnData = customerData.reduce((arr, data) => {
+        const returnData = customerData.reduce<ObjAny>((arr, data) => {
             const otpArr = data.etc.otp;
             if (otpArr.length !== 0) {
                 arr.push({
@@ -103,7 +103,7 @@ class CustomerSchema extends CommonSchema {
                 });
             }
             return arr;
-        }, [] as ObjAny);
+        }, []);
 
         apiReturn.setTableData(returnData);
         apiReturn.setReturnMessage('조회 성공');

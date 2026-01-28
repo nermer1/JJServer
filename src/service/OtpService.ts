@@ -3,7 +3,7 @@ import ApiReturn from '../structure/ApiReturn.js';
 import {schemas} from '../schemas/schemaMap.js';
 
 class otpService {
-    public async getList(customers: Array<String>) {
+    public async getList(customers: string[]) {
         const apiReturn = new ApiReturn();
         const params: DBParamsType = {
             name: 'customerList',
