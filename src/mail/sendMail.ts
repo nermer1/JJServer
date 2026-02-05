@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import HtmlTemplate from '../ui/template/HtmlTemplate.js';
 import {basicProperty} from '../properties/ServerProperty.js';
+import logger from '../utils/logger.js';
 
 const transporter = nodemailer.createTransport({
     host: basicProperty.smtp.host,
@@ -18,11 +19,11 @@ class JJMail {
         const info = await transporter.sendMail({
             from: sender,
             to: reciever,
-            subject: subject,
+            subject,
             html: await template.templateFromFile(`/src/ui/template/mustache/mail/${mustacheName}`, data)
         });
 
-        console.log('Message sent: %s', info.messageId);
+        logger.info('메일 전송 완료', {meta: {to: reciever, subject}});
     }
 
     static async sendMailWithHtml(sender: string, reciever: string, subject: string, html: any) {
@@ -30,11 +31,11 @@ class JJMail {
         const info = await transporter.sendMail({
             from: sender,
             to: reciever,
-            subject: subject,
-            html: html
+            subject,
+            html
         });
 
-        console.log('Message sent: %s', info.messageId);
+        logger.info('Message sent', {meta: {id: info.messageId}});
     }
 }
 

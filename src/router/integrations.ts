@@ -5,5 +5,6 @@ const router = express.Router();
 
 router.post('/slack/commands', SlackController.commands.bind(SlackController));
 router.post('/slack/interactivity', SlackController.interactivity.bind(SlackController));
+router.post('/slack/notify', SlackController.notify.bind(SlackController));
 
 export {router};

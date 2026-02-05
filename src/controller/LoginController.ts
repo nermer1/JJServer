@@ -5,6 +5,7 @@ import {Users} from '../schemas/users.js';
 import ApiReturn from '../structure/ApiReturn.js';
 import JJMail from '../mail/sendMail.js';
 import jwt from 'jsonwebtoken';
+import logger from '../utils/logger.js';
 
 // 테스트 중
 
@@ -17,8 +18,6 @@ class LoginController {
         // 인증 번호 넘어 오면 레디스 확인, 유효시간 확인
         // 성공 시 jwt 발급
         // 실패 시 에러 메시지
-
-        console.log(email, authNumber);
 
         const apiReturn = new ApiReturn();
 
@@ -60,7 +59,7 @@ class LoginController {
             apiReturn.setReturnErrorMessage('파라미터 확인 필요');
         }
 
-        console.log('email:' + email, ' auth: ' + authNumber);
+        logger.info('이메일, 인증번호', {meta: email, authNumber});
         res.json(apiReturn);
     }
 }

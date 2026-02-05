@@ -9,13 +9,17 @@ const axiosCall = (url: string, params: any, callback: Function, errorCallback?:
     const options = {
         headers: params.headers,
         method: params.method || 'post',
-        url: url,
+        url,
         data: params.data
     };
 
     instance(options)
-        .then((response) => call(response, callback, errorCallback))
-        .catch((error) => errorHandler(error));
+        .then((response) => {
+            call(response, callback, errorCallback);
+        })
+        .catch((error) => {
+            errorHandler(error);
+        });
 };
 
 const call = (response: AxiosResponse, callback: Function, errorCallback?: Function) => {

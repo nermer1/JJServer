@@ -2,11 +2,13 @@ import mongoose from 'mongoose';
 import {basicProperty} from '../properties/ServerProperty.js';
 import {stringUtil} from '../utils/Utils.js';
 import BaseDB from './BaseDB.js';
+import logger from '../utils/logger.js';
 
 class MongoDB extends BaseDB {
     constructor() {
         super();
     }
+
     public async connect(): Promise<void> {
         const connectURL = stringUtil.format(basicProperty.db.host, {
             user: basicProperty.db.user,
@@ -15,9 +17,13 @@ class MongoDB extends BaseDB {
 
         mongoose.set('strictQuery', false);
         mongoose
-            .connect(connectURL, {useNewUrlParser: true, useUnifiedTopology: true} as MongooseOption)
-            .then(() => console.log('db connect sucess'))
-            .catch((e) => console.error(e));
+            .connect(connectURL)
+            .then(() => {
+                logger.info('db connect sucess');
+            })
+            .catch((e) => {
+                console.error(e);
+            });
     }
 
     public async close(): Promise<void> {

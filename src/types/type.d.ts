@@ -1,6 +1,4 @@
-interface Tt {
-    [key: string]: Ttt;
-}
+type Tt = Record<string, Ttt>;
 
 interface Ttt {
     customer: string;
@@ -10,17 +8,11 @@ interface Ttt {
     currentTime: string;
 }
 
-interface ObjType {
-    [key: string]: string;
-}
+type ObjType = Record<string, string>;
 
-interface ObjAny {
-    [key: string]: any;
-}
+type ObjAny = Record<string, any>;
 
-interface ObjArr {
-    [key: string]: Array<ObjAny>;
-}
+type ObjArr = Record<string, ObjAny[]>;
 
 interface DBDataType {
     [key: string]: any;
@@ -57,28 +49,24 @@ interface UniPostCipher {
     key: Buffer;
     ivParameterSpec: Buffer;
     algorithm: string;
-    encrypt(plain: string): stirng | Buffer;
-    decrypt(encrypted: Encrypt): stirng | Buffer;
+    encrypt: (plain: string) => stirng | Buffer;
+    decrypt: (encrypted: Encrypt) => stirng | Buffer;
 }
 
 interface IProperty {
-    getString(key: string, defaultValue?: string): string;
-    getNumber(key: string, defaultValue?: string): number;
-    getBoolean(key: string, defaultValue?: string): boolean;
+    getString: (key: string, defaultValue?: string) => string;
+    getNumber: (key: string, defaultValue?: string) => number;
+    getBoolean: (key: string, defaultValue?: string) => boolean;
 }
 
-interface MongooseOption {
-    [key: string]: boolean | string | number;
-}
+type MongooseOption = Record<string, boolean | string | number>;
 
 interface SeleniumMailParams {
     send: string;
     receiver: string;
     subject: string;
     mustache: string;
-    data: {
-        [key: string]: string | boolean | ObjType[];
-    };
+    data: Record<string, string | boolean | ObjType[]>;
 }
 
 interface SeleniumDriverParams {
@@ -112,7 +100,7 @@ interface CustomnerOtp {
 }
 
 interface ExcelDataType {
-    headers: Array<WorkbookHeaderType>;
+    headers: WorkbookHeaderType[];
     sheetName?: string;
     data: any;
 }

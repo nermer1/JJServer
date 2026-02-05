@@ -1,6 +1,7 @@
 import {createClient, RedisClientType} from 'redis';
 import {basicProperty} from '../properties/ServerProperty.js';
 import BaseDB from './BaseDB.js';
+import logger from '../utils/logger.js';
 
 class RedisDB extends BaseDB {
     public client: RedisClientType;
@@ -18,9 +19,9 @@ class RedisDB extends BaseDB {
         if (!this.client.isOpen) {
             try {
                 await this.client.connect();
-                console.log('RedisDB 연결 성공');
+                logger.info('RedisDB 연결 성공');
             } catch (error) {
-                console.error('RedisDB 연결 실패:', error);
+                logger.error('RedisDB 연결 실패:', {err: error});
                 throw error;
             }
         }
@@ -30,9 +31,9 @@ class RedisDB extends BaseDB {
         if (this.client.isOpen) {
             try {
                 await this.client.quit();
-                console.log('Redis 연결 종료');
+                logger.info('Redis 연결 종료');
             } catch (error) {
-                console.error('Redis 연결 종료 실패:', error);
+                logger.error('RedisDB 연결 종료 실패:', {err: error});
             }
         }
     }

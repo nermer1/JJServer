@@ -1,4 +1,5 @@
 import express from 'express';
+import 'express-async-errors';
 import cors from 'cors';
 import fs from 'fs';
 import {externalProperty, basicProperty} from './src/properties/ServerProperty.js';
@@ -15,6 +16,8 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import cookieParser from 'cookie-parser';
 import {router as hyperv} from './src/router/hyperv.js';
+import errorHandler from './src/middleware/errorHandler.js';
+import logger from './src/utils/logger.js';
 
 /* let sslOptions = {};
 
@@ -48,6 +51,7 @@ app.use(express.urlencoded({extended: true}));
 app.use('/api/v1', router);
 app.use('/hyperv', hyperv);
 app.set('socketio', io);
+app.use(errorHandler);
 
 const swaggerApiHost: ObjType = {
     localhost: `http://localhost:${basicProperty.server.port}`,
@@ -99,9 +103,10 @@ const port = basicProperty.server.port;
 
 httpServer.listen(port, () => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    console.log(`Listening on port ${port}`);
+    logger.info('Server starting...');
+    logger.info(`Listening on port ${port}`);
 });
 httpServer.on('close', () => {
-    console.log('server down');
+    logger.info('server down');
     scheduleManger.close();
 });
