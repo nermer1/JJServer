@@ -1,6 +1,6 @@
 import {Request, Response} from 'express';
 import slackService from '../service/SlackService.js';
-import {SlackException} from '../exception/SlackException.js';
+import {SlackException} from '../exception/exceptions.js';
 
 class SlackController {
     public async commands(req: Request, res: Response): Promise<void> {

@@ -6,7 +6,7 @@ import ApiReturn from '../structure/ApiReturn.js';
 import {SlackMessenger} from '../messenger/slackMessenger.js';
 import axios from 'axios';
 import logger from '../utils/logger.js';
-import {SlackException} from '../exception/SlackException.js';
+import {SlackException} from '../exception/exceptions.js';
 
 class SlackService {
     private readonly token = ''; // 설정으로 빼야됨.. 암호화 하던가 깃 푸시 되면 안된다.
