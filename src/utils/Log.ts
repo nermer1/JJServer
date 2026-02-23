@@ -1,8 +1,6 @@
 import logger from './logger.js';
 
-interface LogMeta {
-    [key: string]: any;
-}
+type LogMeta = Record<string, any>;
 
 interface AuditMeta extends LogMeta {
     userId: string;

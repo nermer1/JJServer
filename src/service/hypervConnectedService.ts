@@ -47,7 +47,13 @@ class HypervConnectedService {
 
     private async getHostnameToUserName(key: string): Promise<string> {
         if (Object.keys(this.hostData).length > 0) return this.hostData[key.toLowerCase()] || key;
-        this.hostData = (await schemas.userHost.getUserHost()).reduce((a: ObjType, b: any) => {
+
+        const hosts = await schemas.users.model
+            .find({
+                hostname: {$exists: true, $ne: ''}
+            })
+            .select('hostname name');
+        this.hostData = hosts.reduce((a: ObjType, b: any) => {
             a[b.hostname] = b.name;
             return a;
         }, {});

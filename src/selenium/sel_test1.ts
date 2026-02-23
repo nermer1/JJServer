@@ -1,9 +1,9 @@
 import {dateUtil} from '../utils/Utils.js';
 import {basicProperty} from '../properties/ServerProperty.js';
-import {axiosCall} from '../modules/httpClient/httpClient.js';
+//import {axiosCall} from '../modules/httpClient/ApiClient.js';
 import {webdriver, sendMail, Key, By, until} from './subscriptionGroupManager.js';
 
-const isWeb = true;
+/* const isWeb = true;
 const isTest = true;
 
 function getParams() {
@@ -150,4 +150,4 @@ const run = async () => {
     }
 };
 
-export default run;
+export default run; */

@@ -4,28 +4,6 @@ import {SlackException} from '../exception/exceptions.js';
 
 class SlackController {
     public async commands(req: Request, res: Response): Promise<void> {
-        /* try {
-            const {command} = req.body;
-            switch (command) {
-                case '/otp':
-                    await slackService.commands(req, res);
-                    break;
-                case '/help':
-                    res.json({
-                        response_type: 'ephemeral',
-                        blocks: slackService.getHelpBlocks(),
-                        text: 'help 검색 결과입니다.'
-                    });
-                    break;
-                default:
-                    res.json({text: '알 수 없는 명령어입니다.'});
-            }
-        } catch (e) {
-            console.error('서버 에러:', e);
-            if (res.headersSent) return;
-            res.json({text: e || '서버 에러가 발생했습니다.'});
-        } */
-
         const {command} = req.body;
         switch (command) {
             case '/otp':
@@ -45,13 +23,6 @@ class SlackController {
 
     public async interactivity(req: Request, res: Response): Promise<void> {
         await slackService.interactivity(req, res);
-        /* try {
-            await slackService.interactivity(req, res);
-        } catch (e) {
-            console.error('서버 에러:', e);
-            if (res.headersSent) return;
-            res.json({text: e || '서버 에러가 발생했습니다.'});
-        } */
     }
 
     public async notify(req: Request, res: Response): Promise<void> {

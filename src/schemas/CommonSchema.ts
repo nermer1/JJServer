@@ -2,7 +2,7 @@ import mongoose, {Schema} from 'mongoose';
 import ApiReturn from '../structure/ApiReturn.js';
 
 export default class CommonSchema {
-    private schema: Schema;
+    private readonly schema: Schema;
     model;
 
     constructor(schemaName: string, options = {}) {
@@ -54,7 +54,7 @@ export default class CommonSchema {
     }
 
     async hasRecord(params: ObjAny) {
-        return !!(await this.model.exists(params));
+        return !((await this.model.exists(params)) == null);
     }
 
     async getApiReturn(params: DBParamsType): Promise<ApiReturn> {

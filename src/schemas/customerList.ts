@@ -10,7 +10,7 @@ class CustomerSchema extends CommonSchema {
         super(schemaName, options);
     }
 
-    async insert(params: DBParamsType) {
+    async insert(params: DBParamsType): Promise<ApiReturn> {
         let apiReturn = new ApiReturn();
         const session = await mongoose.startSession();
         session.startTransaction();
@@ -42,7 +42,7 @@ class CustomerSchema extends CommonSchema {
         return apiReturn;
     }
 
-    async update(params: DBParamsType) {
+    async update(params: DBParamsType): Promise<ApiReturn> {
         let apiReturn = new ApiReturn();
         const session = await mongoose.startSession();
         session.startTransaction();
@@ -53,7 +53,7 @@ class CustomerSchema extends CommonSchema {
             etcData._id = dataId;
             etcData.code = inputData.code;
 
-            await this.model.findOneAndUpdate({_id: dataId}, flatten(inputData), {new: true, session});
+            await this.model.findOneAndUpdate({_id: dataId}, flatten(inputData, {safe: true}), {new: true, session});
             const returnData = await CustomerEtc.model.findOneAndUpdate({_id: dataId}, etcData, {new: true, session, runValidators: true});
 
             const findParams: DBParamsType = {
@@ -77,7 +77,7 @@ class CustomerSchema extends CommonSchema {
         return apiReturn;
     }
 
-    async delete(params: DBParamsType) {
+    async delete(params: DBParamsType): Promise<ApiReturn> {
         const apiReturn = new ApiReturn();
         const inputData = params.data.tableData[0];
         await this.model.findByIdAndDelete(inputData._id);
@@ -88,14 +88,16 @@ class CustomerSchema extends CommonSchema {
         return apiReturn;
     }
 
-    async getOptList(params: DBParamsType) {
+    async getOptList(params: DBParamsType): Promise<ApiReturn> {
         const apiReturn = new ApiReturn();
         const customerData = (await this.findAll(params)).getTableData();
+
         const returnData = customerData.reduce<ObjAny>((arr, data) => {
             const otpArr = data.etc.otp;
-            if (otpArr.length !== 0) {
+            const googleOtps = otpArr.filter((otps: any) => otps.type === 'google');
+            if (googleOtps.length > 0) {
                 arr.push({
-                    otp: data.etc.otp,
+                    otp: googleOtps,
                     customer: {
                         code: data.code,
                         text: data.text

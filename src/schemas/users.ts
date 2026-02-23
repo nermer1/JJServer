@@ -52,11 +52,35 @@ class UserSchema extends CommonSchema {
 const POSITION_LIST = ['매니저', '상무', '전무', '대표이사'];
 const TITLE_LIST = ['없음', '팀장', '파트장', '그룹장', '부사장', '대표이사'];
 
+const settingsSchema = new Schema(
+    {
+        notifications: {
+            slack: {
+                otp: {type: [String], default: []}
+            }
+        },
+        theme: {
+            type: String,
+            default: 'system'
+        },
+        colorTheme: {
+            type: String,
+            default: 'default'
+        },
+        favorites: {
+            type: Object,
+            default: {}
+        }
+    },
+    {_id: false}
+);
+
 const Users = new UserSchema('users', {
     name: {required: true, type: String},
     birthDate: {type: String},
     hostname: {type: String, default: ''},
     userId: {required: true, type: String},
+    slackId: {type: String, default: ''},
     createdAt: {type: String},
     email: {
         required: true,
@@ -80,6 +104,10 @@ const Users = new UserSchema('users', {
             message: 'Mobile number validation failed'
         }
     },
+    extension: {
+        type: String,
+        default: ''
+    },
     position: {
         required: true,
         type: String,
@@ -94,7 +122,7 @@ const Users = new UserSchema('users', {
             values: TITLE_LIST,
             message: '{VALUE} is not supported'
         },
-        default: null
+        default: '없음'
     },
     department_id: {
         type: Schema.Types.ObjectId,
@@ -111,7 +139,8 @@ const Users = new UserSchema('users', {
             ref: 'role'
         }
     ],
-    deleted: {type: String, default: ''}
+    deleted: {type: String, default: ''},
+    settings: {type: settingsSchema, default: () => ({})}
 });
 
 export {Users};

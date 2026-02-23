@@ -4,15 +4,11 @@ import logger from '../utils/logger.js';
 
 class PrdApiController {
     public async call(req: Request, res: Response): Promise<void> {
-        try {
-            const collectionName = req.params.collection;
-            const params = req.body;
-            logger.info('PrdApiController call', {collectionName, params});
-            const returnData = await prdApiService.call(collectionName, params);
-            res.json(returnData);
-        } catch (error) {
-            //res.json(returnData);
-        }
+        const collectionName = req.params.collection;
+        const params = req.body;
+        logger.info('PrdApiController call', {collectionName, params});
+        const returnData = await prdApiService.call(collectionName, params);
+        res.json(returnData);
     }
 }
 

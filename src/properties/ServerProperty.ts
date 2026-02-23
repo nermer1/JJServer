@@ -7,7 +7,7 @@ import UniPostCipher from '../cipher/UniPostCipher.js';
  *
  */
 class Property implements IProperty {
-    private dirPath;
+    private readonly dirPath;
     public serverAlias = 'localhost';
 
     public constructor(dirPath: string) {
@@ -15,8 +15,8 @@ class Property implements IProperty {
         this.mergeEnv(this.dirPath);
     }
 
-    private mergeEnv(dirPath: string) {
-        this.serverAlias = process.env['SERVER_ALIAS'] || 'localhost';
+    private mergeEnv(dirPath: string): void {
+        this.serverAlias = process.env.SERVER_ALIAS ?? 'localhost';
         fs.readdirSync(dirPath).forEach((name: string) => {
             const fullPath = path.join(dirPath, name);
             const stat = fs.statSync(fullPath);
@@ -30,7 +30,7 @@ class Property implements IProperty {
         });
     }
 
-    private typeConverter: any = {
+    private readonly typeConverter: any = {
         number: this.number,
         string: this.string,
         boolean: this.boolean
@@ -86,7 +86,7 @@ class Property implements IProperty {
  *
  */
 class ServerProperty extends Property {
-    private uniPostCipher: UniPostCipher;
+    private readonly uniPostCipher: UniPostCipher;
     private static instance: ServerProperty;
     public static path = 'config/server/';
 

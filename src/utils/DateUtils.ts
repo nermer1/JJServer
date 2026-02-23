@@ -27,6 +27,11 @@ export default class DateUtils {
         }
     }
 
+    public static formatDateWithString(dateString: string): string {
+        const date = new Date(dateString);
+        return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+    }
+
     /**
      *
      * @returns

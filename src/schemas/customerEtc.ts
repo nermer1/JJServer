@@ -10,7 +10,8 @@ class CustomerEtcSchema extends CommonSchema {
 
 const otpSchema = new Schema(
     {
-        secret: {type: String, required: true},
+        type: {type: String, enum: ['google', 'sms', 'email'], required: true},
+        secret: {type: String},
         mobile: {type: String},
         user: {type: String, required: true}
     },
