@@ -7,7 +7,10 @@ class SlackController {
         const {command} = req.body;
         switch (command) {
             case '/otp':
-                await slackService.commands(req, res);
+                await slackService.handleOtpCommand(req, res);
+                break;
+            case '/nbbang':
+                await slackService.handleNbbangCommand(req, res);
                 break;
             case '/help':
                 res.json({

@@ -1,4 +1,5 @@
 import express from 'express';
+import {Request, Response, NextFunction} from 'express';
 import 'express-async-errors';
 import cors from 'cors';
 import fs from 'fs';
@@ -18,26 +19,24 @@ import cookieParser from 'cookie-parser';
 import {router as hyperv} from './src/router/hyperv.js';
 import errorHandler from './src/middleware/errorHandler.js';
 import logger from './src/utils/logger.js';
-
-/* let sslOptions = {};
-
-try {
-    sslOptions = {
-        key: fs.readFileSync(externalProperty.getString('PROD_SSL_KEY')),
-        cert: fs.readFileSync(externalProperty.getString('PROD_SSL_CERT'))
-    };
-} catch (e) {
-    console.log(e);
-} */
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 const httpServer = createServer(app);
 httpServer.keepAliveTimeout = 0;
-//const httpServer = createServer(sslOptions, app);
+
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
     cors: {origin: '*'}
 });
 
+const publicApiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, 
+    limit: 100, 
+    message: "1분간 차단",
+    keyGenerator: (req: Request): string => req.ip || 'unknown_ip' 
+});
+
+app.set('trust proxy', 1);
 app.use(
     cors({
         origin: '*',
@@ -48,7 +47,7 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
-app.use('/api/v1', router);
+app.use('/api/v1', publicApiLimiter, router);
 app.use('/hyperv', hyperv);
 app.set('socketio', io);
 app.use(errorHandler);

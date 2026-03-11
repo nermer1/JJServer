@@ -40,7 +40,9 @@ const pcSchema = new Schema(
                 validator: (value: string) => validator.isMacAddress(value),
                 message: 'Mac Address validation failed'
             }
-        }
+        },
+        hostServerIP: {type: String},
+        vmName: {type: String}
     },
     {_id: false}
 );

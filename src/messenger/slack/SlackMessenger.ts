@@ -1,5 +1,5 @@
 /* eslint-disable */
-import {WebClient, ChatPostMessageResponse, KnownBlock, Block, UsersListResponse} from '@slack/web-api';
+import {WebClient, ChatPostMessageResponse, KnownBlock, Block, UsersListResponse, View} from '@slack/web-api';
 import ArrayUtils from '../../utils/ArrayUtils.js';
 
 type SlackMember = NonNullable<UsersListResponse['members']>[number];
@@ -109,6 +109,9 @@ export class SlackMessenger {
         }
     }
 
+    /**
+     * 병렬 메시지 전송
+     */
     public async broadcast(targets: MessengerTarget[], commonMessage: string | (KnownBlock | Block)[], chunkSize: number = 20): Promise<BroadcastResult> {
         const result: BroadcastResult = {total: targets.length, successCount: 0, failures: []};
 
@@ -170,5 +173,23 @@ export class SlackMessenger {
         });
 
         return result;
+    }
+
+    /**
+     * 모달창 오픈
+     */
+    public async openModal(triggerId: string, view: View): Promise<void> {
+        try {
+            const response = await this.client.views.open({
+                trigger_id: triggerId,
+                view: view
+            });
+            
+            if (!response.ok) {
+                console.error('[Slack Modal Error] 모달 오픈 실패:', response.error);
+            }
+        } catch (error: any) {
+            throw new Error(`[Slack Modal Error] ${error.message}`);
+        }
     }
 }
