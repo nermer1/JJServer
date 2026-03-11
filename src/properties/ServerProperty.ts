@@ -124,6 +124,12 @@ class ServerProperty extends Property {
             },
             gitLap: {
                 pak: this.getDecyptProperty('49f52143ab095e9344216915bc9ed79c535341042a3d6835a4860d6659b39dd8')
+            },
+            slack: {
+                token: this.getDecyptProperty(this.getString('SLACK_TOKEN'))
+            },
+            wiki: {
+                token: this.getDecyptProperty(this.getString('OUTLINE_WIKI_TOKEN'))
             }
         };
     }
