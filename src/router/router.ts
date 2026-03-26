@@ -8,6 +8,8 @@ import {router as hyperv} from './hyperv.js';
 import {router as downloads} from './downloads.js';
 import {router as otp} from './otp.js';
 import {router as integrations} from './integrations.js';
+import {router as apikeys} from './apikeys.js';
+import {router as auth} from './auth.js';
 
 const router = express.Router();
 
@@ -18,7 +20,9 @@ router.use('/hyperv', hyperv);
 router.use('/downloads', downloads);
 router.use('/otp', otp);
 router.use('/integrations', integrations);
-router.post('/login', LoginController.test.bind(LoginController));
+router.use('/apikeys', apikeys);
+router.use('/auth', auth);
+
 router.post('/:collection', PrdApiController.call.bind(PrdApiController));
 
 export default router;

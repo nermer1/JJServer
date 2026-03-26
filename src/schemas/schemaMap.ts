@@ -9,6 +9,7 @@ import {CustomerEtc} from './customerEtc.js';
 import {Department} from './department.js';
 import {Permission} from './permission.js';
 import {Role} from './role.js';
+import {ApiKeys} from './apiKeys.js';
 
 const schemas = {
     holiday: Holiday,
@@ -21,7 +22,8 @@ const schemas = {
     customerList: CustomerList,
     customerEtc: CustomerEtc,
     permission: Permission,
-    role: Role
+    role: Role,
+    apiKeys: ApiKeys
 };
 
 export {schemas};

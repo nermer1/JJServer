@@ -18,6 +18,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import cookieParser from 'cookie-parser';
 import {router as hyperv} from './src/router/hyperv.js';
 import errorHandler from './src/middleware/errorHandler.js';
+import {verifyApiToken} from './src/middleware/authMiddleware.js';
 import logger from './src/utils/logger.js';
 import rateLimit from 'express-rate-limit';
 
@@ -29,12 +30,23 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEve
     cors: {origin: '*'}
 });
 
-const publicApiLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000, 
-    limit: 100, 
-    message: "1분간 차단",
-    keyGenerator: (req: Request): string => req.ip || 'unknown_ip' 
-});
+// 윈도우 도커 내 엔진엑스 컨테이너는 실 아이피를 받아오지 못하는 버그가 있는 듯 일단 주석처리
+/* const publicApiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    limit: 60,
+    message: '1분간 차단',
+    keyGenerator: (req: Request): string => {
+        // Nginx를 거치면 req.ip가 Nginx의 내부 IP(127.0.0.1 등)로 고정될 수 있습니다.
+        // 클라이언트의 진짜 IP가 담긴 X-Forwarded-For 헤더를 최우선으로 빼옵니다.
+        const forwarded = req.headers['x-forwarded-for'];
+        const clientIp = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.ip;
+
+        // --- 디버깅용 로그 추가 ---
+        logger.info(`[RateLimiter Debug] req.ip: ${req.ip} | x-forwarded-for: ${forwarded} | Final IP: ${clientIp}`);
+
+        return clientIp || 'unknown_ip';
+    }
+}); */
 
 app.set('trust proxy', 1);
 app.use(
@@ -47,8 +59,9 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
-app.use('/api/v1', publicApiLimiter, router);
-app.use('/hyperv', hyperv);
+//app.use('/api/v1', publicApiLimiter, verifyApiToken, router);
+app.use('/api/v1', verifyApiToken, router);
+app.use('/hyperv', verifyApiToken, hyperv);
 app.set('socketio', io);
 app.use(errorHandler);
 
