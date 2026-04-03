@@ -10,6 +10,7 @@ import {router as otp} from './otp.js';
 import {router as integrations} from './integrations.js';
 import {router as apikeys} from './apikeys.js';
 import {router as auth} from './auth.js';
+import {router as push} from './push.js';
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.use('/otp', otp);
 router.use('/integrations', integrations);
 router.use('/apikeys', apikeys);
 router.use('/auth', auth);
+router.use('/push', push);
 
 router.post('/:collection', PrdApiController.call.bind(PrdApiController));
 

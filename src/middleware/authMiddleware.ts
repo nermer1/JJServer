@@ -6,7 +6,7 @@ import {ApiKeys} from '../schemas/apiKeys.js';
 
 // 제외할 라우트 목록 (인증 없이 접근 가능)
 // /auth 라우터로 묶여있어 req.path가 /auth/login 또는 /auth/refresh로 들어옵니다.
-const EXCLUDE_ROUTES = ['/auth/login', '/auth/refresh', '/docs'];
+const EXCLUDE_ROUTES = ['/auth/login', '/auth/refresh', '/docs', '/apikeys'];
 
 export const verifyApiToken = async (req: Request, res: Response, next: NextFunction) => {
     const path = req.path;

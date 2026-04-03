@@ -2,6 +2,7 @@ import {Request, Response} from 'express';
 import {ApiKeys} from '../schemas/apiKeys.js';
 import ApiReturn from '../structure/ApiReturn.js';
 import {generatorUtils as generator} from '../utils/Utils.js';
+import crypto from 'crypto';
 
 class ApiKeyController {
     /**
@@ -15,7 +16,7 @@ class ApiKeyController {
 
         const apiReturn = new ApiReturn();
 
-        if (!userId) {
+        /* if (!userId) {
             apiReturn.setReturnErrorMessage('발급자의 userId 정보를 찾을 수 없습니다.');
             res.status(401).json(apiReturn);
             return;
@@ -25,17 +26,17 @@ class ApiKeyController {
             apiReturn.setReturnErrorMessage('발급처 이름(name)이 필요합니다.');
             res.status(400).json(apiReturn);
             return;
-        }
+        } */
 
         try {
-            // 좀 더 복잡하고 긴 고유 문자열 생성
-            const rawKey = generator.generateRandomString() + generator.generateRandomString();
+            // 완벽한 보안 난수(16바이트 = 32자리 hex) 생성
+            const rawKey = crypto.randomBytes(16).toString('hex');
             const newKey = `ak_${rawKey}`; // 구분을 위해 prefix 'ak_' 추가
 
             await ApiKeys.model.create({
                 key: newKey,
-                userId: userId,
-                name: name,
+                userId: userId || 'test_user',
+                name: name || 'test_name',
                 isActive: true
             });
 

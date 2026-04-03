@@ -38,6 +38,11 @@ class RedisTest {
         }
     }
 
+    public async keys(pattern: string): Promise<string[]> {
+        if (!this.client) throw new Error('Redis client is not connected');
+        return await this.client.keys(pattern);
+    }
+
     public async set(key: string, value: string, option?: ObjAny): Promise<void> {
         if (!this.client) throw new Error('Redis client is not connected');
         await this.client.set(key, value, option);

@@ -14,10 +14,6 @@ class HypervConnectedController {
         });
         res.json({success: true});
     }
-
-    public test(req: Request, res: Response): void {
-        hypervConnectedService.test(res);
-    }
 }
 
 export default new HypervConnectedController();

@@ -21,7 +21,9 @@ import errorHandler from './src/middleware/errorHandler.js';
 import {verifyApiToken} from './src/middleware/authMiddleware.js';
 import logger from './src/utils/logger.js';
 import rateLimit from 'express-rate-limit';
-
+import {initHypervSocket} from './src/socket/HypervSocket.js';
+import HypervSocketService from './src/service/HypervSocketService.js';
+import WebPushService from './src/service/WebPushService.js';
 const app = express();
 const httpServer = createServer(app);
 httpServer.keepAliveTimeout = 0;
@@ -97,16 +99,7 @@ redisTest.connect();
 
 const socketServer = app.get('socketio');
 
-socketServer.on('connection', function (socket: Socket) {
-    /* socket.on('disconnect', function () {
-        console.log('연결 끊김');
-    }); */
-
-    socket.on('hyperV', (room: string) => {
-        console.log(room);
-        socket.join(room);
-    });
-});
+initHypervSocket(socketServer);
 
 // 스케줄러 실행 관련
 //scheduleManger.init();
@@ -117,6 +110,8 @@ httpServer.listen(port, () => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     logger.info('Server starting...');
     logger.info(`Listening on port ${port}`);
+    HypervSocketService.init(socketServer);
+    WebPushService.init();
 });
 httpServer.on('close', () => {
     logger.info('server down');
