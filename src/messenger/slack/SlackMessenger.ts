@@ -33,13 +33,9 @@ export class SlackMessenger {
         }
 
         if (target.email) {
-            try {
-                const result = await this.client.users.lookupByEmail({email: target.email});
-                if (result.ok && result.user?.id) {
-                    return result.user.id;
-                }
-            } catch (error) {
-                console.warn(`[Slack] 이메일(${target.email}) 조회 실패:`, error);
+            const user = await this.getUserInfo({email: target.email});
+            if (user && user.id) {
+                return user.id;
             }
         }
 
@@ -63,6 +59,44 @@ export class SlackMessenger {
         } catch (error: any) {
             throw new Error(`[Slack UserList Error] ${error.message}`);
         }
+    }
+
+    /**
+     * 특정 사용자 정보 단건 조회 (API 낭비 방지)
+     * 이메일 또는 슬랙 고유 ID를 기반으로 해당 유저의 상세 정보만 초고속으로 가져옵니다.
+     */
+    public async getUserInfo(target: {slackId?: string; email?: string}): Promise<SlackMember | null> {
+        try {
+            // 1. 슬랙 ID가 주어졌을 때
+            if (target.slackId) {
+                const result = await this.client.users.info({user: target.slackId});
+                if (result.ok && result.user) {
+                    return result.user as SlackMember;
+                }
+            }
+
+            // 2. 이메일이 주어졌을 때
+            if (target.email) {
+                const result = await this.client.users.lookupByEmail({email: target.email});
+                if (result.ok && result.user) {
+                    return result.user as SlackMember;
+                }
+            }
+
+            return null;
+        } catch (error: any) {
+            console.warn(`[Slack] 단건 사용자 조회 실패 (대상: ${JSON.stringify(target)}):`, error.message);
+            return null;
+        }
+    }
+
+    /**
+     * 슬랙 ID를 기반으로 해당 유저의 표시 이름(Display Name)을 최우선으로 추출해 반환합니다.
+     */
+    public async getDisplayName(slackUserId: string, fallbackName: string = '관리자'): Promise<string> {
+        if (!slackUserId) return fallbackName;
+        const userInfo = await this.getUserInfo({slackId: slackUserId});
+        return userInfo?.profile?.display_name || userInfo?.profile?.real_name || fallbackName;
     }
 
     /**

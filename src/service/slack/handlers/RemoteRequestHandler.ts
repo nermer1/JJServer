@@ -2,11 +2,9 @@ import {Request, Response} from 'express';
 import axios from 'axios';
 import {SlackMessenger} from '../../../messenger/slack/SlackMessenger.js';
 import {RemoteRequestBlocks} from '../blocks/RemoteRequestBlocks.js';
-import HypervConnectedService from '../../HypervConnectedService.js';
 import HypervSocketService from '../../HypervSocketService.js';
 import {schemas} from '../../../schemas/schemaMap.js';
 import {dateUtil} from '../../../utils/Utils.js';
-import {Server} from 'socket.io';
 import logger from '../../../utils/logger.js';
 
 export class RemoteRequestHandler {
@@ -41,7 +39,7 @@ export class RemoteRequestHandler {
             logger.warn('Failed to parse slack action value');
         }
 
-        const approverName = payload.user?.name || payload.user?.username || '관리자';
+        const approverName = await slackClient.getDisplayName(payload.user?.id);
 
         if (io) {
             // 해당 VM을 소유한 대상 호스트(targetHostname)의 소켓 방으로 직접 이벤트 송신 (객체 포맷팅)
@@ -81,7 +79,7 @@ export class RemoteRequestHandler {
         // 슬랙 메시지 업데이트 (본인 채팅창)
         await axios.post(responseUrl, {
             replace_original: true,
-            text: `✅ 원격 접속 요청이 승인되었습니다. (승인자: ${approverName})`,
+            text: `✅ 원격 접속 요청이 승인되었습니다. (요청자: ${requesterName})`,
             response_type: 'ephemeral'
         });
 
@@ -131,7 +129,7 @@ export class RemoteRequestHandler {
             logger.warn('Failed to parse slack action value');
         }
 
-        const approverName = payload.user?.name || payload.user?.username || '관리자';
+        const approverName = await slackClient.getDisplayName(payload.user?.id);
 
         /* if (io) {
             // 거부 시 타겟 호스트에 disconnect 또는 결과 송신
@@ -159,7 +157,7 @@ export class RemoteRequestHandler {
         // 본인 화면(거부자) 버튼을 메시지로 대체
         await axios.post(responseUrl, {
             replace_original: true,
-            text: `❌ 원격 접속 요청이 거부되었습니다. (검토자: ${approverName})`,
+            text: `❌ 원격 접속 요청이 거부되었습니다. (요청자: ${requesterName})`,
             response_type: 'ephemeral'
         });
 
