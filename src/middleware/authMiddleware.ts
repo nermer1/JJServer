@@ -6,7 +6,7 @@ import {ApiKeys} from '../schemas/apiKeys.js';
 
 // 제외할 라우트 목록 (인증 없이 접근 가능)
 // /auth 라우터로 묶여있어 req.path가 /auth/login 또는 /auth/refresh로 들어옵니다.
-const EXCLUDE_ROUTES = ['/auth/login', '/auth/refresh', '/docs', '/apikeys'];
+const EXCLUDE_ROUTES = ['/auth/login', '/auth/refresh', '/docs', '/apikeys', '/integrations/slack/commands', '/integrations/slack/interactivity'];
 
 export const verifyApiToken = async (req: Request, res: Response, next: NextFunction) => {
     const path = req.path;
@@ -26,10 +26,9 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
     } else if (authHeader && authHeader.startsWith('Bearer ')) {
         token = authHeader.split(' ')[1];
     } else {
-        return res.status(401).json({
-            success: false,
-            message: '인증 토큰이 누락되었거나 형식이 올바르지 않습니다.'
-        });
+        const err = new Error('인증 토큰이 누락되었거나 형식이 올바르지 않습니다.');
+        (err as any).status = 401;
+        return next(err);
     }
 
     // 2. 외부 연동용 DB 다중 API Key 비교 (Option A)
@@ -56,11 +55,8 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
         (req as any).user = decoded;
         return next();
     } catch (error) {
-        logger.error(`토큰 검증 실패: ${error}`);
-        return res.status(401).json({
-            success: false,
-            message: '유효기간이 만료되었거나 유효하지 않은 토큰입니다. (인증 실패)'
-        });
+        const err = new Error('유효기간이 만료되었거나 유효하지 않은 토큰입니다. (인증 실패)');
+        (err as any).status = 401;
+        return next(err);
     }
 };
-

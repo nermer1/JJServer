@@ -5,10 +5,14 @@ import {Server} from 'socket.io';
 import WebPushService from './WebPushService.js';
 import {schemas} from '../schemas/schemaMap.js';
 import redisTest from '../db/RedisTest.js';
+import {SlackMessenger} from '../messenger/slack/SlackMessenger.js';
+import {basicProperty} from '../properties/ServerProperty.js';
+import {RemoteRequestBlocks} from './slack/blocks/RemoteRequestBlocks.js';
 
 const execAsync = promisify(exec);
 
 class HypervSocketService {
+    private readonly slackClient = new SlackMessenger(basicProperty.slack.token);
     private hostData: ObjType = {};
 
     private userMap = new Map<string, string>();
@@ -120,7 +124,7 @@ class HypervSocketService {
             this.io.to(vm.hostname).emit('use-request', {vmName, requesterName, requesterHostname: requesterHostname ?? null});
         }
 
-        const payload = JSON.stringify({
+        /* const payload = JSON.stringify({
             title: 'VM 접속 요청',
             body: `${requesterName}님이 ${vmName} 접속을 요청했습니다.`,
             tag: `vm-request-${vmName}`,
@@ -130,7 +134,31 @@ class HypervSocketService {
             sentAt: Date.now()
         });
 
-        await WebPushService.sendNotification(vm.hostname, payload);
+        await WebPushService.sendNotification(vm.hostname, payload); */
+
+        // Slack Notification
+        try {
+            const targetUser = await schemas.users.model.findOne({hostname: vm.hostname}).select('slackId').lean();
+            if (targetUser && targetUser.slackId) {
+                const requestInfo = {
+                    requester: requesterName,
+                    targetHostname: vm.hostname, // VM이 떠 있는 호스트
+                    requesterHostname: requesterHostname, // 접속을 요청한 사람의 호스트
+                    vmName: vmName,
+                    reason: `${vmName} 원격 접속 요청`
+                };
+                const blocks = RemoteRequestBlocks.buildRequestBlocks(requestInfo);
+                await this.slackClient.sendCardMessage({
+                    channelId: targetUser.slackId,
+                    message: blocks
+                });
+                logger.info(`[slack-message-sent] Slack message sent to ${vm.hostname} (Slack ID: ${targetUser.slackId})`);
+            } else {
+                logger.warn(`[slack-message-failed] Cannot find slackId for hostname: ${vm.hostname}`);
+            }
+        } catch (error) {
+            logger.error(`[Slack Notify Error] Failed to send remote request message: ${error}`);
+        }
 
         return {ok: true};
     }
@@ -146,4 +174,3 @@ class HypervSocketService {
 }
 
 export default new HypervSocketService();
-

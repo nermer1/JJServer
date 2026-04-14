@@ -5,6 +5,7 @@ import {OtpHandler} from './handlers/OtpHandler.js';
 import {NbbangHandler} from './handlers/NbbangHandler.js';
 import {WikiHandler} from './handlers/WikiHandler.js';
 import {HelpBlocks} from './blocks/HelpBlocks.js';
+import {RemoteRequestHandler} from './handlers/RemoteRequestHandler.js';
 import {SlackMessenger} from '../../messenger/slack/SlackMessenger.js';
 
 export class SlackRouter {
@@ -61,6 +62,12 @@ export class SlackRouter {
                     break;
                 case 'post':
                     await WikiHandler.handlePostAction(payload, value, response_url);
+                    break;
+                case 'remote_request_approve':
+                    await RemoteRequestHandler.handleApproveAction(payload, value, response_url, this.slackClient);
+                    break;
+                case 'remote_request_deny':
+                    await RemoteRequestHandler.handleDenyAction(payload, value, response_url, this.slackClient);
                     break;
                 default:
                     break;

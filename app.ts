@@ -59,8 +59,14 @@ app.use(
 );
 
 app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+const captureRawBody = (req: any, res: any, buf: Buffer) => {
+    if (buf && buf.length) {
+        req.rawBody = buf;
+    }
+};
+
+app.use(express.json({ verify: captureRawBody }));
+app.use(express.urlencoded({ extended: true, verify: captureRawBody }));
 //app.use('/api/v1', publicApiLimiter, verifyApiToken, router);
 app.use('/api/v1', verifyApiToken, router);
 app.use('/hyperv', verifyApiToken, hyperv);

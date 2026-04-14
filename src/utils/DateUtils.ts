@@ -66,4 +66,18 @@ export default class DateUtils {
 
         return lastFriday;
     }
+
+    /**
+     * Unix 타임스탬프(초 단위) 문자열을 입력받아 지정된 초(maxSeconds)가 지났는지 확인합니다.
+     * 예: Slack의 message_ts (1712345678.001000)
+     */
+    public static isUnixSecondsExpired(timestampString: string, maxSeconds: number): boolean {
+        if (!timestampString) return true;
+        
+        const sentTime = parseFloat(timestampString);
+        if (isNaN(sentTime)) return true;
+        
+        const now = Date.now() / 1000;
+        return (now - sentTime) > maxSeconds;
+    }
 }
