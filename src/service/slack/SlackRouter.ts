@@ -20,16 +20,19 @@ export class SlackRouter {
 
         switch (command) {
             case '/otp':
+            case '/otp_test':
                 logger.info('Slack Command 요청 받음', {meta: req.body});
                 res.status(200).send();
                 await OtpHandler.handleOtpCommand(req, res);
                 break;
             case '/nbbang':
+            case '/nbbang_test':
                 logger.info('Slack Command 요청 받음 (N빵)', {meta: req.body});
                 res.status(200).send();
                 await NbbangHandler.handleCommand(req, res, this.slackClient);
                 break;
             case '/help':
+            case '/help_test':
                 res.status(200).json({
                     response_type: 'ephemeral',
                     blocks: HelpBlocks.buildHelpBlocks(),
@@ -78,7 +81,7 @@ export class SlackRouter {
         if (payload.type === 'view_submission') {
             if (payload.view.callback_id === 'nbbang_modal_submit') {
                 logger.info('[Slack button]', {payload});
-                await NbbangHandler.handleModalSubmit(payload);
+                await NbbangHandler.handleModalSubmit(payload, this.slackClient);
             }
         }
     }

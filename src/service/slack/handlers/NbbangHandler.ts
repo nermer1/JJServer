@@ -15,7 +15,7 @@ export class NbbangHandler {
         }
     }
 
-    static async handleModalSubmit(payload: any) {
+    static async handleModalSubmit(payload: any, slackClient?: SlackMessenger) {
         try {
             const responseUrl = payload.view.private_metadata;
             const values = payload.view.state.values;
@@ -26,6 +26,9 @@ export class NbbangHandler {
 
             const detailsStr = values.details_block?.details_input?.value || '';
             const accountStr = values.account_block?.account_input?.value || '미입력 (정산자에게 별도 문의)';
+
+            const dmCheckOptions = values.dm_check_block?.dm_check_action?.selected_options || [];
+            const isSendDm = dmCheckOptions.some((opt: any) => opt.value === 'send_dm');
 
             const totalAmount = parseInt(amountStr.replace(/[^0-9]/g, ''), 10) || 0;
             const userCount = selectedUsers.length;
@@ -44,6 +47,15 @@ export class NbbangHandler {
                 response_type: 'in_channel',
                 blocks: messageBlocks
             });
+
+            if (isSendDm && slackClient && selectedUsers.length > 0) {
+                const targets = selectedUsers.map((uid: string) => ({
+                    channelId: uid,
+                    message: messageBlocks
+                }));
+                await slackClient.broadcast(targets, messageBlocks);
+                logger.info(`N빵 개별 메시지 ${userCount}명에게 발송 완료`);
+            }
         } catch (error) {
             logger.error('N빵 계산 에러:', error);
         }

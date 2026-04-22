@@ -58,6 +58,25 @@ export const NbbangBlocks = {
                         placeholder: {type: 'plain_text', text: '함께한 사람들을 골라주세요'}
                     },
                     label: {type: 'plain_text', text: '정산 대상자'}
+                },
+                {
+                    type: 'input',
+                    block_id: 'dm_check_block',
+                    optional: true,
+                    element: {
+                        type: 'checkboxes',
+                        action_id: 'dm_check_action',
+                        options: [
+                            {
+                                text: {
+                                    type: 'plain_text',
+                                    text: '정산 대상자들에게 개별 DM을 발송합니다.'
+                                },
+                                value: 'send_dm'
+                            }
+                        ]
+                    },
+                    label: {type: 'plain_text', text: '개별 메시지 발송'}
                 }
             ],
             submit: {type: 'plain_text', text: '계산하기'}
