@@ -16,8 +16,8 @@ const router = express.Router();
 
 // 라우터 분리 작업 시작
 //router.use('/login', login);
+//router.use('/hyperv', hyperv);  이거 안 쓸꺼 같은디 흠;;
 router.use('/licenses', licenses);
-router.use('/hyperv', hyperv);
 router.use('/downloads', downloads);
 router.use('/otp', otp);
 router.use('/integrations', integrations);
