@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import axios from 'axios';
+import { apiClient } from '../../../modules/httpClient/ApiClient.js';
 import {SlackMessenger} from '../../../messenger/slack/SlackMessenger.js';
 import {RemoteRequestBlocks} from '../blocks/RemoteRequestBlocks.js';
 import HypervSocketService from '../../HypervSocketService.js';
@@ -14,7 +14,7 @@ export class RemoteRequestHandler {
         if (messageTs) {
             // 1. 발송된 지 60초가 넘었는지 검사 (최초 메시지 발송 시간 기준 1분 제한)
             if (dateUtil.isUnixSecondsExpired(messageTs, 60)) {
-                await axios.post(responseUrl, {
+                await apiClient.post(responseUrl, {
                     replace_original: true,
                     text: '⏳ 유효시간(1분)이 지나 만료된 기능입니다.',
                     response_type: 'ephemeral'
@@ -77,7 +77,7 @@ export class RemoteRequestHandler {
         }
 
         // 슬랙 메시지 업데이트 (본인 채팅창)
-        await axios.post(responseUrl, {
+        await apiClient.post(responseUrl, {
             replace_original: true,
             text: `✅ 원격 접속 요청이 승인되었습니다. (요청자: ${requesterName})`,
             response_type: 'ephemeral'
@@ -104,7 +104,7 @@ export class RemoteRequestHandler {
         if (messageTs) {
             // 1. 발송된 지 60초가 넘었는지 검사 (최초 메시지 발송 시간 기준 1분 제한)
             if (dateUtil.isUnixSecondsExpired(messageTs, 60)) {
-                await axios.post(responseUrl, {
+                await apiClient.post(responseUrl, {
                     replace_original: true,
                     text: '⏳ 유효시간(1분)이 지나 만료된 기능입니다.',
                     response_type: 'ephemeral'
@@ -155,7 +155,7 @@ export class RemoteRequestHandler {
         } */
 
         // 본인 화면(거부자) 버튼을 메시지로 대체
-        await axios.post(responseUrl, {
+        await apiClient.post(responseUrl, {
             replace_original: true,
             text: `❌ 원격 접속 요청이 거부되었습니다. (요청자: ${requesterName})`,
             response_type: 'ephemeral'
@@ -189,7 +189,7 @@ export class RemoteRequestHandler {
 
         const blocks = RemoteRequestBlocks.buildRequestBlocks(requestInfo);
 
-        await axios.post(response_url, {
+        await apiClient.post(response_url, {
             replace_original: true,
             text: '원격 접속 요청 알림',
             response_type: 'in_channel',

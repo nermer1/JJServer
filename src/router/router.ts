@@ -1,8 +1,6 @@
 import express from 'express';
 
 import PrdApiController from '../controller/PrdApiController.js';
-import LoginController from '../controller/LoginController.js';
-//import {router as login} from './login.js';
 import {router as licenses} from './licenses.js';
 import {router as hyperv} from './hyperv.js';
 import {router as downloads} from './downloads.js';
@@ -16,7 +14,7 @@ const router = express.Router();
 
 // 라우터 분리 작업 시작
 //router.use('/login', login);
-//router.use('/hyperv', hyperv);  이거 안 쓸꺼 같은디 흠;;
+router.use('/hyperv', hyperv);
 router.use('/licenses', licenses);
 router.use('/downloads', downloads);
 router.use('/otp', otp);

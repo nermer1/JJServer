@@ -24,6 +24,7 @@ class SlackService {
         res.status(200).send();
 
         // 여기서 나온 슬랙 아이디로 promise.all로 20개씩 끊어서 발송한다고 해보장
+        // todo 알림도 otp 인지 아닌지 여러 타입 구분을 주고 처리해야 될 듯
 
         const regex = /\b\d{4,8}\b/;
         const match = message.match(regex);

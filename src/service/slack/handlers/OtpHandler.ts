@@ -4,7 +4,7 @@ import StringUtils from '../../../utils/StringUtils.js';
 import otpService from '../../OtpService.js';
 import {OtpBlocks} from '../blocks/OtpBlocks.js';
 import {SlackMessenger} from '../../../messenger/slack/SlackMessenger.js';
-import axios from 'axios';
+import { apiClient } from '../../../modules/httpClient/ApiClient.js';
 
 export class OtpHandler {
     static async handleOtpCommand(req: Request, res: Response) {
@@ -23,7 +23,7 @@ export class OtpHandler {
         const codeArr = results.map((item: any) => item.customer.code);
         const otpList = await otpService.getList(codeArr);
 
-        await axios.post(response_url, {
+        await apiClient.post(response_url, {
             replace_original: true,
             text: 'OTP 검색 결과입니다.',
             response_type: 'ephemeral',
@@ -35,7 +35,7 @@ export class OtpHandler {
         const otpList = await otpService.getList([value]);
         const blocks = OtpBlocks.buildOtpBlocks(otpList, 'refresh_otp');
 
-        await axios.post(responseUrl, {
+        await apiClient.post(responseUrl, {
             replace_original: true,
             text: 'OTP가 갱신되었습니다.',
             response_type: 'ephemeral',

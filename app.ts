@@ -65,11 +65,10 @@ const captureRawBody = (req: any, res: any, buf: Buffer) => {
     }
 };
 
-app.use(express.json({ verify: captureRawBody }));
-app.use(express.urlencoded({ extended: true, verify: captureRawBody }));
+app.use(express.json({verify: captureRawBody}));
+app.use(express.urlencoded({extended: true, verify: captureRawBody}));
 //app.use('/api/v1', publicApiLimiter, verifyApiToken, router);
 app.use('/api/v1', verifyApiToken, router);
-app.use('/hyperv', verifyApiToken, hyperv);
 app.set('socketio', io);
 app.use(errorHandler);
 

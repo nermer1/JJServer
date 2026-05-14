@@ -54,9 +54,20 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
         // 복호화된 사용자 정보(userId, isAdmin 등)를 req 객체에 담습니다.
         (req as any).user = decoded;
         return next();
-    } catch (error) {
-        const err = new Error('유효기간이 만료되었거나 유효하지 않은 토큰입니다. (인증 실패)');
+    } catch (error: any) {
+        /* const err = new Error('유효기간이 만료되었거나 유효하지 않은 토큰입니다. (인증 실패)');
         (err as any).status = 401;
-        return next(err);
+        return next(err); */
+        logger.warn(`JWT 검증 에러: ${error.name} - ${error.message}`);
+        if (error.name === 'TokenExpiredError') {
+            const err = new Error('토큰 유효기간이 만료되었습니다. 다시 로그인해주세요.');
+            (err as any).status = 401;
+            (err as any).code = 'EXPIRED_TOKEN'; // 클라이언트가 이 코드를 보고 토큰 갱신을 시도하게 함
+            return next(err);
+        } else {
+            const err = new Error('유효하지 않은 토큰입니다. (인증 실패)');
+            (err as any).status = 401;
+            return next(err);
+        }
     }
 };

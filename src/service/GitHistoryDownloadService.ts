@@ -1,4 +1,4 @@
-import axios, {AxiosResponse} from 'axios';
+import { apiClient } from '../modules/httpClient/ApiClient.js';
 import {Request, Response, NextFunction} from 'express';
 import {generatorUtils as generator} from '../utils/Utils.js';
 import {basicProperty} from '../properties/ServerProperty.js';
@@ -13,11 +13,11 @@ class GitHistoryDownloadService {
 
     public async getExcelBuffer(req: Request): Promise<Buffer> {
         const {projectId, fromDate, toDate} = req.body;
-        let [page, per_page, allCommits] = [1, 100, []];
+        let page = 1, per_page = 100, allCommits: any[] = [];
         this.projectId = await this.getProjectId(projectId);
 
         while (true) {
-            const response: AxiosResponse<any> = await axios.get(`${this.gitlabBaseUrl}${this.projectId}/repository/commits`, {
+            const response = await apiClient.get<any[]>(`${this.gitlabBaseUrl}${this.projectId}/repository/commits`, {
                 headers: {
                     'PRIVATE-TOKEN': this.accessToken
                 },
@@ -30,13 +30,15 @@ class GitHistoryDownloadService {
                 }
             });
 
+            if (!response.success) throw new Error('GitLab API Error');
+
             response.data.forEach((commit: any) => {
                 commit.created_at = dateUtil.formatDate(new Date(commit.created_at), 'yyyy-MM-dd hh:mm:dd');
             });
 
             allCommits = allCommits.concat(response.data);
 
-            const nextPage = response.headers['x-next-page'];
+            const nextPage = response.headers?.['x-next-page'];
             if (!nextPage) break;
 
             page = parseInt(nextPage, 10);
@@ -55,7 +57,7 @@ class GitHistoryDownloadService {
     }
 
     private async getProjectId(name: string): Promise<string> {
-        const response: AxiosResponse<any> = await axios.get(`${this.gitlabBaseUrl}?search=${name}`, {
+        const response = await apiClient.get<any[]>(`${this.gitlabBaseUrl}?search=${name}`, {
             headers: {
                 'PRIVATE-TOKEN': this.accessToken
             },
@@ -64,6 +66,7 @@ class GitHistoryDownloadService {
             }
         });
 
+        if (!response.success) throw new Error('GitLab API Error');
         if (response.data.length === 0) throw new Error('project not found');
 
         return response.data[0].id;

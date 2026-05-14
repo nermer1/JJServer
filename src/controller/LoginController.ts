@@ -48,7 +48,7 @@ class LoginController {
                 const userInfo = await Users.findAll({option: {email}} as DBParamsType);
                 const {email: userId, role: isAdmin} = userInfo.getTableData()[0];
                 const payload = {userId, isAdmin};
-                const token = jwt.sign(payload, secretKey, {expiresIn: '1h'});
+                const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
 
                 // Refresh Token 발급 및 Redis 저장 (14일 수명)
                 const refreshToken = jwt.sign({userId}, secretKey, {expiresIn: '14d'});
@@ -109,7 +109,7 @@ class LoginController {
             const payload = {userId, isAdmin};
 
             // 4. 새로운 Access Token만 달랑 구워서 내려줌 (테스트용 1m)
-            const token = jwt.sign(payload, secretKey, {expiresIn: '1h'});
+            const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
 
             res.cookie('token', token, {httpOnly: true});
             apiReturn.put('token', token);
