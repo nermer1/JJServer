@@ -53,7 +53,7 @@ class HypervSocketService {
     }
 
     private async getHostnameToUserName(key: string): Promise<string> {
-        if (Object.keys(this.hostData).length > 0) return this.hostData[key.toLowerCase()] || key;
+        if (Object.keys(this.hostData).length > 0) return this.hostData[key] || key;
 
         const hosts = await schemas.users.model
             .find({
@@ -65,7 +65,7 @@ class HypervSocketService {
             return a;
         }, {});
 
-        return this.hostData[key.toLowerCase()] || key;
+        return this.hostData[key] || key;
     }
 
     public async computeVmStatus() {
