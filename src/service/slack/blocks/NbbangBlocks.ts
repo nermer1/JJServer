@@ -26,7 +26,7 @@ export const NbbangBlocks = {
                         multiline: true,
                         placeholder: {type: 'plain_text', text: '예:\n1차 삼겹살: 150,000원\n2차 맥주: 50,000원'}
                     },
-                    label: {type: 'plain_text', text: '상세 내역 (선택)'}
+                    label: {type: 'plain_text', text: '상세 내역'}
                 },
                 {
                     type: 'input',
@@ -34,7 +34,7 @@ export const NbbangBlocks = {
                     element: {
                         type: 'plain_text_input',
                         action_id: 'amount_input',
-                        placeholder: {type: 'plain_text', text: '예: 200000'}
+                        placeholder: {type: 'plain_text', text: '예: 15000, 24000 (콤마로 다수 입력 가능)'}
                     },
                     label: {type: 'plain_text', text: '총 결제 금액'}
                 },
@@ -47,7 +47,7 @@ export const NbbangBlocks = {
                         action_id: 'account_input',
                         placeholder: {type: 'plain_text', text: '예: 카카오페이, 토스, 계좌번호 등'}
                     },
-                    label: {type: 'plain_text', text: '입금 계좌 (선택)'}
+                    label: {type: 'plain_text', text: '입금 계좌'}
                 },
                 {
                     type: 'input',

@@ -29,7 +29,10 @@ export class NbbangHandler {
         const dmCheckOptions = values.dm_check_block?.dm_check_action?.selected_options || [];
         const isSendDm = dmCheckOptions.some((opt: any) => opt.value === 'send_dm');
 
-        const totalAmount = parseInt(amountStr.replace(/[^0-9]/g, ''), 10) || 0;
+        const totalAmount = amountStr
+            .split(',')
+            .map((str: string) => parseInt(str.trim().replace(/[^0-9]/g, ''), 10) || 0)
+            .reduce((sum: number, val: number) => sum + val, 0);
         const userCount = selectedUsers.length;
 
         if (userCount === 0) {
