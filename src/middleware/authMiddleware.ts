@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import {externalProperty} from '../properties/ServerProperty.js';
 import logger from '../utils/logger.js';
 import {ApiKeys} from '../schemas/apiKeys.js';
+import PermissionCacheService from '../service/PermissionCacheService.js';
 
 // 제외할 라우트 목록 (인증 없이 접근 가능)
 // /auth 라우터로 묶여있어 req.path가 /auth/login 또는 /auth/refresh로 들어옵니다.
@@ -33,10 +34,19 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
 
     // 2. 외부 연동용 DB 다중 API Key 비교 (Option A)
     try {
-        const dbKey = await ApiKeys.model.findOne({key: token, isActive: true});
+        const dbKey = await ApiKeys.model.findOne({key: token, isActive: true}).populate('permissions');
         if (dbKey) {
             // 사용 기록 업데이트
             await ApiKeys.model.updateOne({key: token}, {lastUsedAt: new Date()});
+            
+            const permissions = dbKey.permissions ? dbKey.permissions.map((p: any) => p.action || p) : [];
+            (req as any).user = {
+                key: token,
+                userId: dbKey.userId,
+                type: 'apikey',
+                permissions
+            };
+
             // API Key가 일치하면 통과
             return next();
         }
@@ -50,8 +60,17 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
     const jwtSecret = externalProperty.getString('JWT_SECRET', 'test');
 
     try {
-        const decoded = jwt.verify(token, jwtSecret);
-        // 복호화된 사용자 정보(userId, isAdmin 등)를 req 객체에 담습니다.
+        const decoded = jwt.verify(token, jwtSecret) as any;
+        decoded.type = 'jwt';
+        
+        // JWT Payload 대신 Redis에서 권한 가져오기 (캐시 없으면 DB 조회 후 자동 캐싱)
+        if (decoded.userId) {
+            decoded.permissions = await PermissionCacheService.getCachedPermissions(decoded.userId);
+        } else {
+            decoded.permissions = [];
+        }
+
+        // 복호화된 사용자 정보(userId, permissions 등)를 req 객체에 담습니다.
         (req as any).user = decoded;
         return next();
     } catch (error: any) {

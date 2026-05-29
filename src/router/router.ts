@@ -1,6 +1,7 @@
 import express from 'express';
 
 import PrdApiController from '../controller/PrdApiController.js';
+import {genericCrudPermission} from '../middleware/genericCrudPermission.js';
 import {router as licenses} from './licenses.js';
 import {router as hyperv} from './hyperv.js';
 import {router as downloads} from './downloads.js';
@@ -23,7 +24,7 @@ router.use('/apikeys', apikeys);
 router.use('/auth', auth);
 router.use('/push', push);
 
-router.post('/:collection', PrdApiController.call.bind(PrdApiController));
+router.post('/:collection', genericCrudPermission, PrdApiController.call.bind(PrdApiController));
 
 export default router;
 

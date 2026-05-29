@@ -75,7 +75,7 @@ const settingsSchema = new Schema(
     {_id: false}
 );
 
-const Users = new UserSchema('users', {
+const userSchemaDefinition = new Schema({
     name: {required: true, type: String},
     birthDate: {type: String},
     hostname: {type: String, default: ''},
@@ -129,10 +129,7 @@ const Users = new UserSchema('users', {
         ref: 'department',
         default: null
     },
-    role: {
-        type: String,
-        default: 'basic'
-    },
+
     roles: [
         {
             type: Schema.Types.ObjectId,
@@ -142,5 +139,22 @@ const Users = new UserSchema('users', {
     deleted: {type: String, default: ''},
     settings: {type: settingsSchema, default: () => ({})}
 });
+
+// 유저 정보가 업데이트되면(역할 등) 캐시를 강제로 비워 무중단 갱신을 유도합니다.
+userSchemaDefinition.post('save', async function(doc) {
+    if (doc && doc.email) {
+        const PermissionCacheService = (await import('../service/PermissionCacheService.js')).default;
+        await PermissionCacheService.clearUserCache(doc.email);
+    }
+});
+
+userSchemaDefinition.post('findOneAndUpdate', async function(doc) {
+    if (doc && doc.email) {
+        const PermissionCacheService = (await import('../service/PermissionCacheService.js')).default;
+        await PermissionCacheService.clearUserCache(doc.email);
+    }
+});
+
+const Users = new UserSchema('users', userSchemaDefinition);
 
 export {Users};

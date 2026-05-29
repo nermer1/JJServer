@@ -9,3 +9,4 @@
 *.map
 app.tar.gz
 /*.idea
+.md

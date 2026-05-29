@@ -6,6 +6,7 @@ import ApiReturn from '../structure/ApiReturn.js';
 import JJMail from '../mail/sendMail.js';
 import jwt from 'jsonwebtoken';
 import logger from '../utils/logger.js';
+import PermissionCacheService from '../service/PermissionCacheService.js';
 
 // 테스트 중
 
@@ -44,15 +45,41 @@ class LoginController {
 
                 // email로 사원 정보 조회?
 
-                //Users
-                const userInfo = await Users.findAll({option: {email}} as DBParamsType);
-                const {email: userId, role: isAdmin} = userInfo.getTableData()[0];
-                const payload = {userId, isAdmin};
+                const userDoc = await Users.model.findOne({email}).populate({
+                    path: 'roles',
+                    populate: {
+                        path: 'permissions'
+                    }
+                }).lean();
+
+                if (!userDoc) {
+                    apiReturn.setReturnErrorMessage('해당 유저를 찾을 수 없습니다.');
+                    res.json(apiReturn);
+                    return;
+                }
+
+                const permissionsSet = new Set<string>();
+                if (userDoc.roles && Array.isArray(userDoc.roles)) {
+                    userDoc.roles.forEach((role: any) => {
+                        if (role.permissions && Array.isArray(role.permissions)) {
+                            role.permissions.forEach((perm: any) => {
+                                if (perm.action) permissionsSet.add(perm.action);
+                            });
+                        }
+                    });
+                }
+                const permissions = Array.from(permissionsSet);
+
+                // Redis 권한 캐싱 (B방식 적용)
+                await PermissionCacheService.cacheUserPermissions(userDoc.email, permissions);
+
+                // JWT Payload 최소화 (권한 제외)
+                const payload = {userId: userDoc.email};
                 const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
 
                 // Refresh Token 발급 및 Redis 저장 (14일 수명)
-                const refreshToken = jwt.sign({userId}, secretKey, {expiresIn: '14d'});
-                await redisTest.set(`refresh:${userId}`, refreshToken, {EX: 14 * 24 * 60 * 60});
+                const refreshToken = jwt.sign({userId: userDoc.email}, secretKey, {expiresIn: '14d'});
+                await redisTest.set(`refresh:${userDoc.email}`, refreshToken, {EX: 14 * 24 * 60 * 60});
 
                 res.cookie('token', token, {httpOnly: true});
                 apiReturn.put('token', token);
@@ -97,18 +124,39 @@ class LoginController {
                 return;
             }
 
-            // 3. 다시 토큰을 굽기 위해 DB에서 유저 권한 한 번 더 조회
-            const userInfo = await Users.findAll({option: {email: userId}} as DBParamsType);
-            if (!userInfo.getTableData() || userInfo.getTableData().length === 0) {
+            // 3. 다시 토큰을 굽기 위해 DB에서 유저 권한 한 번 더 조회 (Populate 적용)
+            const userDoc = await Users.model.findOne({email: userId}).populate({
+                path: 'roles',
+                populate: {
+                    path: 'permissions'
+                }
+            }).lean();
+
+            if (!userDoc) {
                 apiReturn.setReturnErrorMessage('해당 유저 정보를 찾을 수 없습니다.');
                 res.status(401).json(apiReturn);
                 return;
             }
 
-            const {role: isAdmin} = userInfo.getTableData()[0];
-            const payload = {userId, isAdmin};
+            const permissionsSet = new Set<string>();
+            if (userDoc.roles && Array.isArray(userDoc.roles)) {
+                userDoc.roles.forEach((role: any) => {
+                    if (role.permissions && Array.isArray(role.permissions)) {
+                        role.permissions.forEach((perm: any) => {
+                            if (perm.action) permissionsSet.add(perm.action);
+                        });
+                    }
+                });
+            }
+            const permissions = Array.from(permissionsSet);
 
-            // 4. 새로운 Access Token만 달랑 구워서 내려줌 (테스트용 1m)
+            // Redis 권한 캐싱 (B방식 적용)
+            await PermissionCacheService.cacheUserPermissions(userDoc.email, permissions);
+
+            // JWT Payload 최소화 (권한 제외)
+            const payload = {userId: userDoc.email};
+
+            // 4. 새로운 Access Token만 달랑 구워서 내려줌 (테스트용 1m -> 24h)
             const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
 
             res.cookie('token', token, {httpOnly: true});

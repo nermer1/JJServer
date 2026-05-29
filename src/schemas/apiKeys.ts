@@ -1,4 +1,5 @@
 import CommonSchema from './CommonSchema.js';
+import {Schema} from 'mongoose';
 
 class ApiKeySchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
@@ -12,7 +13,13 @@ const ApiKeys = new ApiKeySchema('apiKeys', {
     name: {required: true, type: String}, // ex) 'Slack Webhook', 'A Company Server'
     isActive: {type: Boolean, default: true},
     createdAt: {type: Date, default: Date.now},
-    lastUsedAt: {type: Date, default: null}
+    lastUsedAt: {type: Date, default: null},
+    permissions: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'permission'
+        }
+    ]
 });
 
 export {ApiKeys};
