@@ -96,14 +96,6 @@ const userSchemaDefinition = new Schema({
             return this.name;
         }
     },
-    phoneNumber: {
-        unique: true,
-        type: String,
-        validate: {
-            validator: (value: string) => validator.isPhone(value),
-            message: 'Mobile number validation failed'
-        }
-    },
     extension: {
         type: String,
         default: ''

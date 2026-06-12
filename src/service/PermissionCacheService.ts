@@ -1,5 +1,6 @@
 import redisTest from '../db/RedisTest.js';
 import {Users} from '../schemas/users.js';
+import {ApiKeys} from '../schemas/apiKeys.js';
 import logger from '../utils/logger.js';
 
 class PermissionCacheService {
@@ -93,6 +94,60 @@ class PermissionCacheService {
             });
         }
         return Array.from(permissionsSet);
+    }
+
+    // ==========================================
+    // ⭐ API Key 캐싱 처리 로직
+    // ==========================================
+
+    /**
+     * Redis에서 API Key 캐시(유저ID, 권한 등)를 조회합니다.
+     */
+    public async getCachedApiKey(token: string): Promise<{userId: string, permissions: string[]} | null> {
+        try {
+            const cached = await redisTest.get(`apikey:${token}`);
+            if (cached) {
+                return JSON.parse(cached);
+            }
+
+            // 캐시가 없으면 DB에서 재조회
+            logger.info(`API Key 캐시 만료됨(${token}). DB에서 다시 읽어옵니다.`);
+            const keyData = await this.rebuildApiKeyFromDB(token);
+            
+            if (keyData) {
+                await redisTest.set(`apikey:${token}`, JSON.stringify(keyData), {EX: this.TTL_SECONDS});
+            }
+            return keyData;
+        } catch (error) {
+            logger.error(`API Key cache get error: ${error}`);
+            return null;
+        }
+    }
+
+    /**
+     * 특정 API Key 캐시를 삭제합니다. (백오피스 수정 시 호출)
+     */
+    public async clearApiKeyCache(token: string): Promise<void> {
+        try {
+            await redisTest.del(`apikey:${token}`);
+            logger.info(`API Key(${token})의 권한 캐시를 삭제했습니다.`);
+        } catch (error) {
+            logger.error(`Failed to clear cache for API Key: ${error}`);
+        }
+    }
+
+    /**
+     * DB에서 API Key 정보를 다시 읽어옵니다. (isActive가 false면 null 리턴)
+     */
+    private async rebuildApiKeyFromDB(token: string): Promise<{userId: string, permissions: string[]} | null> {
+        const dbKey = await ApiKeys.model.findOne({key: token, isActive: true}).populate('permissions');
+        if (!dbKey) return null;
+
+        const permissions = dbKey.permissions ? dbKey.permissions.map((p: any) => p.action || p) : [];
+        return {
+            userId: dbKey.userId,
+            permissions
+        };
     }
 }
 

@@ -32,26 +32,30 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
         return next(err);
     }
 
-    // 2. 외부 연동용 DB 다중 API Key 비교 (Option A)
-    try {
-        const dbKey = await ApiKeys.model.findOne({key: token, isActive: true}).populate('permissions');
-        if (dbKey) {
-            // 사용 기록 업데이트
-            await ApiKeys.model.updateOne({key: token}, {lastUsedAt: new Date()});
-            
-            const permissions = dbKey.permissions ? dbKey.permissions.map((p: any) => p.action || p) : [];
-            (req as any).user = {
-                key: token,
-                userId: dbKey.userId,
-                type: 'apikey',
-                permissions
-            };
+    // 2. 외부 연동용 API Key 캐시(또는 DB) 비교 (Option A)
+    // JWT를 API Key로 오해하고 캐시/DB를 찌르지 않도록, 'ak_'로 시작하거나 x-api-key 헤더가 있을 때만 검사합니다.
+    if (token.startsWith('ak_') || apiKeyHeader) {
+        try {
+            const cachedKey = await PermissionCacheService.getCachedApiKey(token);
+            if (cachedKey) {
+                // 사용 기록 업데이트 (비동기 처리로 응답 속도 저하 방지)
+                ApiKeys.model.updateOne({key: token}, {lastUsedAt: new Date()}).exec().catch(err => {
+                    logger.error(`API Key lastUsedAt 업데이트 중 에러: ${err}`);
+                });
+                
+                (req as any).user = {
+                    key: token,
+                    userId: cachedKey.userId,
+                    type: 'apikey',
+                    permissions: cachedKey.permissions
+                };
 
-            // API Key가 일치하면 통과
-            return next();
+                // API Key가 일치하면 통과
+                return next();
+            }
+        } catch (error) {
+            logger.error(`API Key 검증 중 에러: ${error}`);
         }
-    } catch (error) {
-        logger.error(`API Key DB 조회 중 에러: ${error}`);
     }
 
     // 3. JWT 검증 (Option B)

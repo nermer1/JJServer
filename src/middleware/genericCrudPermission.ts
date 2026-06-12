@@ -18,7 +18,27 @@ export const genericCrudPermission = (req: Request, res: Response, next: NextFun
     }
 
     // ==========================================
-    // 1. users 컬렉션 권한 처리
+    // ⭐ API Key (외부 시스템) 전용 로직 분리
+    // ==========================================
+    if (user.type === 'apikey') {
+        // 기계(API Key)는 사람처럼 'own' 검사(이메일 강제 주입)를 하지 않고 전용 권한을 검사합니다.
+        if (collectionName === 'users' && params.type === 'R') {
+            // api:read:users 권한이 있거나, 기존 관리자 권한이 있으면 통과
+            if (user.permissions.includes('api:read:users') || user.permissions.includes('user:read:any')) {
+                return next(); 
+            } else {
+                logger.warn(`[Permission Denied] API Key 접근 거부 (Key: ${user.key})`);
+                return res.status(403).json({ok: false, message: 'API Key에 해당 데이터 접근 권한이 없습니다.'});
+            }
+        }
+        
+        // 추후 다른 컬렉션 기계 전용 로직 추가 부분
+        logger.warn(`[Permission Denied] 허용되지 않은 API Key 컬렉션 접근 (${collectionName})`);
+        return res.status(403).json({ok: false, message: '허용되지 않은 API Key 접근입니다.'});
+    }
+
+    // ==========================================
+    // 👤 JWT (일반 유저) 권한 처리
     // ==========================================
     if (collectionName === 'users') {
         
