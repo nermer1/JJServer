@@ -8,7 +8,7 @@ import {externalProperty, basicProperty} from './src/properties/ServerProperty.j
 import {createServer} from 'http';
 import {Server, Socket} from 'socket.io';
 import router from './src/router/router.js';
-import scheduleManger from './src/scheduler/mailSendScheduler.js';
+import scheduleManger from './src/scheduler/index.js';
 //import db from './src/db.js';
 import DBFactory from './src/factory/DBFactory.js';
 import redisTest from './src/db/RedisTest.js';
@@ -107,7 +107,7 @@ const socketServer = app.get('socketio');
 initHypervSocket(socketServer);
 
 // 스케줄러 실행 관련
-//scheduleManger.init();
+scheduleManger.init();
 
 const port = basicProperty.server.port;
 

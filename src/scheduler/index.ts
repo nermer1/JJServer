@@ -1,4 +1,5 @@
 import {TaskScheduleManager as schedule} from './TaskScheduleManager.js';
+import { syncHrDataJob } from './hrSyncScheduler.js';
 //import mailService from '../service/scheduleSendMailService.js';
 
 /**
@@ -19,6 +20,9 @@ import {TaskScheduleManager as schedule} from './TaskScheduleManager.js';
  */
 //schedule.add('test2', '0 9 * * 1-5', mailService.run3);
 //schedule.add('test2', '*/5 * * * * *', mailService.run3);
+
+// 새벽 3시마다 인사정보 동기화!
+schedule.add('HR_SYNC', '0 3 * * *', syncHrDataJob);
 
 const scheduleManager = {
     init: () => {
