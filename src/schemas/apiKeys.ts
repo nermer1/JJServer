@@ -20,7 +20,7 @@ class ApiKeySchema extends CommonSchema {
                 if (!item.key) {
                     item.key = `ak_${crypto.randomBytes(16).toString('hex')}`;
                 }
-                
+
                 // 2. 발급자의 userId를 강제 주입 (보안)
                 if (currentUser && currentUser.userId) {
                     item.userId = currentUser.userId;
@@ -34,15 +34,17 @@ class ApiKeySchema extends CommonSchema {
                     if (stringPerms.length > 0) {
                         // Permission 컬렉션 동적 import (순환 참조 방지용)
                         const {Permission} = await import('./permission.js');
-                        const permDocs = await Permission.model.find({ action: { $in: stringPerms } });
-                        
-                        item.permissions = item.permissions.map((p: any) => {
-                            if (typeof p === 'string') {
-                                const found = permDocs.find(doc => doc.action === p);
-                                return found ? found._id : null;
-                            }
-                            return p;
-                        }).filter(Boolean); // 찾지 못한 권한(null)은 제거
+                        const permDocs = await Permission.model.find({action: {$in: stringPerms}});
+
+                        item.permissions = item.permissions
+                            .map((p: any) => {
+                                if (typeof p === 'string') {
+                                    const found = permDocs.find((doc) => doc.action === p);
+                                    return found ? found._id : null;
+                                }
+                                return p;
+                            })
+                            .filter(Boolean); // 찾지 못한 권한(null)은 제거
                     }
                 }
             }
@@ -81,4 +83,3 @@ apiKeyDefinition.post('findOneAndDelete', clearCache);
 const ApiKeys = new ApiKeySchema('apiKeys', apiKeyDefinition);
 
 export {ApiKeys};
-

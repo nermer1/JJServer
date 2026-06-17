@@ -3,7 +3,7 @@ import logger from '../utils/logger.js';
 
 /**
  * 특정 권한이 있는지 검사하는 인가(Authorization) 미들웨어
- * 
+ *
  * @param requiredPermission 필요한 권한 (예: 'user:create:any')
  */
 export const requirePermission = (requiredPermission: string) => {
@@ -14,7 +14,7 @@ export const requirePermission = (requiredPermission: string) => {
         if (!user || !user.permissions || !Array.isArray(user.permissions)) {
             logger.warn(`[Permission Denied] 접근 거부: 사용자에게 부여된 권한 정보가 없습니다. (Required: ${requiredPermission})`);
             return res.status(403).json({
-                ok: false, 
+                ok: false,
                 message: '권한 검증에 실패했습니다. (부여된 권한 정보가 없습니다)'
             });
         }
@@ -22,9 +22,11 @@ export const requirePermission = (requiredPermission: string) => {
         // 2. 요구되는 권한이 있는지 확인
         if (!user.permissions.includes(requiredPermission)) {
             const identifier = user.userId || user.key || 'Unknown';
-            logger.warn(`[Permission Denied] 사용자(${identifier})가 권한 없이 접근 시도. (Required: ${requiredPermission}, Has: ${user.permissions.join(', ')})`);
+            logger.warn(
+                `[Permission Denied] 사용자(${identifier})가 권한 없이 접근 시도. (Required: ${requiredPermission}, Has: ${user.permissions.join(', ')})`
+            );
             return res.status(403).json({
-                ok: false, 
+                ok: false,
                 message: '해당 기능을 사용할 권한이 없습니다.'
             });
         }

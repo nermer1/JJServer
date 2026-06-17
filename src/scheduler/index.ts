@@ -1,5 +1,6 @@
 import {TaskScheduleManager as schedule} from './TaskScheduleManager.js';
-import { syncHrDataJob } from './hrSyncScheduler.js';
+import {syncHrDataJob} from './hrSyncScheduler.js';
+import PermissionSyncService from '../service/PermissionSyncService.js';
 //import mailService from '../service/scheduleSendMailService.js';
 
 /**
@@ -23,6 +24,9 @@ import { syncHrDataJob } from './hrSyncScheduler.js';
 
 // 새벽 3시마다 인사정보 동기화!
 schedule.add('HR_SYNC', '0 3 * * *', syncHrDataJob);
+
+// 매일 자정에 Permission 데이터 동기화
+schedule.add('PERMISSION_SYNC', '0 0 * * *', () => PermissionSyncService.syncAdminPermissions());
 
 const scheduleManager = {
     init: () => {

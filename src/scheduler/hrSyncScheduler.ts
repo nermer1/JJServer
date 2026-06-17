@@ -64,6 +64,15 @@ export const syncHrDataJob = async () => {
             // 퇴사자 여부 판별 (user_show_yn이 N이거나 retire_date가 있을 경우 퇴사로 간주)
             const isResigned = emp.user_show_yn === 'N' || !!emp.retire_date;
 
+            // 만약 퇴사자라면 DB에서 완전히 제거하는 연산(deleteOne) 반환
+            if (isResigned) {
+                return {
+                    deleteOne: {
+                        filter: {email: emp.us_mail1}
+                    }
+                };
+            }
+
             // A(HR 데이터)를 B(내 서비스 스키마) 형태로 1차 매핑
             const mappedData: Record<string, any> = {
                 userId: emp.us_id,
@@ -108,10 +117,10 @@ export const syncHrDataJob = async () => {
             };
         });
 
-        // 3. 한 번에 DB 적용 (Upsert)
+        // 3. 한 번에 DB 적용 (Upsert & Delete)
         const result = await Users.model.bulkWrite(bulkOps as any);
 
-        logger.info(`[배치] 인사 정보 동기화 완료! (Upserted: ${result.upsertedCount}, Modified: ${result.modifiedCount})`);
+        logger.info(`[배치] 인사 정보 동기화 완료! (Upserted: ${result.upsertedCount}, Modified: ${result.modifiedCount}, Deleted: ${result.deletedCount})`);
     } catch (error) {
         logger.error('[배치 오류] 인사 정보 동기화 중 에러 발생:', error);
     }
