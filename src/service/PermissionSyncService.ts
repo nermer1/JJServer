@@ -4,10 +4,11 @@ import PermissionCacheService from './PermissionCacheService.js';
 
 class PermissionSyncService {
     /**
-     * Permission 컬렉션의 모든 권한을 특정 Role(기본: 'ADMIN')에 동기화합니다.
+     * Permission 컬렉션의 모든 권한을 시스템 최고 관리자('SYSTEM_ADMIN')에게 동기화합니다.
      * 외부(Mongo Shell 등)에서 강제 삽입된 권한 데이터 누락을 방지합니다.
      */
-    async syncAdminPermissions(targetRoleName = 'SYSTEM_ADMIN') {
+    async syncAdminPermissions() {
+        const targetRoleName = 'SYSTEM_ADMIN';
         try {
             // 1. 등록된 모든 권한 가져오기
             const permissions = await Permission.model.find({}, {_id: 1});

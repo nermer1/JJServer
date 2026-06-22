@@ -7,6 +7,7 @@ import router from '../router/router.js';
 import scheduleManager from '../scheduler/index.js';
 //import db from '../db.js';
 import {initSocket} from './socket.js';
+import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 
 class Server {
     constructor() {}
@@ -35,6 +36,11 @@ const port = basicProperty.server.port;
 httpServer.listen(port, () => {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     console.log(`Listening on port ${port}`);
+    
+    // 서버 구동 시 DB에서 시스템 설정(JWT 시크릿 등)을 메모리로 캐싱
+    SystemSettingsCacheService.loadSettings().catch((err) => {
+        console.error('SystemSettings 초기 로드 실패:', err);
+    });
 });
 
 httpServer.on('close', () => {

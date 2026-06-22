@@ -41,8 +41,16 @@ async function fetchHrDataFromApi(): Promise<HrApiUser[]> {
     return response.data;
 }
 
-// B 데이터에 절대로 덮어씌우지 않을 특정 필드명 목록 (예외 처리)
-const EXCLUDED_FIELDS = ['slackId', 'extension'];
+// 인사 정보 동기화 처리 규칙 설정
+const SYNC_RULES = {
+    // DB 데이터에 절대로 덮어씌우지 않을 예외 필드 목록
+    excludedFields: ['slackId', 'extension'],
+    // 값이 비어있을 경우 대체할 기본값(Fallback)
+    fallbacks: {
+        position: '없음',
+        title: '없음'
+    } as Record<string, string>
+};
 
 /**
  * 인사 정보 동기화 배치 작업
@@ -90,13 +98,17 @@ export const syncHrDataJob = async () => {
             // 1차 매핑된 데이터를 순회하며 불필요한 값 제거
             for (const [key, value] of Object.entries(mappedData)) {
                 // [조건 1] 업데이트 제외 목록에 있는 필드인지 확인
-                if (EXCLUDED_FIELDS.includes(key)) {
+                if (SYNC_RULES.excludedFields.includes(key)) {
                     continue;
                 }
 
-                // [조건 2] 공란(null, undefined, 빈 문자열) 무시
+                // [조건 2] 공란(null, undefined, 빈 문자열) 처리
                 if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
-                    continue;
+                    // 대체할 기본값이 설정되어 있다면 기본값 적용
+                    if (SYNC_RULES.fallbacks[key] !== undefined) {
+                        setPayload[key] = SYNC_RULES.fallbacks[key];
+                    }
+                    continue; // 기본값이 없으면 무시
                 }
 
                 // 조건을 통과한 유효한 값만 최종 업데이트 객체에 담기

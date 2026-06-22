@@ -7,6 +7,7 @@ import JJMail from '../mail/sendMail.js';
 import jwt from 'jsonwebtoken';
 import logger from '../utils/logger.js';
 import PermissionCacheService from '../service/PermissionCacheService.js';
+import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 
 // 테스트 중
 
@@ -40,8 +41,8 @@ class LoginController {
                 apiReturn.setReturnErrorMessage('확실 해요?');
             } else {
                 // 토큰 발행
-                // 시크릿키는 환경변수로 따로 빼야함
-                const secretKey = 'test';
+                // 시크릿키는 DB(SystemSettings)에서 동적으로 가져옵니다. 기본값은 'test'
+                const secretKey = SystemSettingsCacheService.get('JWT_SECRET', 'test');
 
                 // email로 사원 정보 조회?
 
@@ -59,8 +60,12 @@ class LoginController {
                 }
 
                 const permissionsSet = new Set<string>();
+                let maxRoleLevel = 0;
                 if (userDoc.roles && Array.isArray(userDoc.roles)) {
                     userDoc.roles.forEach((role: any) => {
+                        if (role.level && role.level > maxRoleLevel) {
+                            maxRoleLevel = role.level;
+                        }
                         if (role.permissions && Array.isArray(role.permissions)) {
                             role.permissions.forEach((perm: any) => {
                                 if (perm.action) permissionsSet.add(perm.action);
@@ -74,7 +79,11 @@ class LoginController {
                 await PermissionCacheService.cacheUserPermissions(userDoc.email, permissions);
 
                 // JWT Payload 최소화 (권한 제외)
-                const payload = {userId: userDoc.email};
+                const payload = {
+                    userId: userDoc.email,
+                    department_id: userDoc.department_id?.toString() || null,
+                    level: maxRoleLevel
+                };
                 const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
 
                 // Refresh Token 발급 및 Redis 저장 (14일 수명)
@@ -108,66 +117,101 @@ class LoginController {
             return;
         }
 
-        const secretKey = 'test'; // 추후 환경변수로 분리
+        const secretKey = SystemSettingsCacheService.get('JWT_SECRET', 'test');
 
+        let decoded;
         try {
             // 1. 리프레시 토큰 자체의 유효성 검증
-            const decoded = jwt.verify(refreshToken, secretKey) as any;
-            const userId = decoded.userId;
-
-            // 2. Redis에 저장된 원래의 리프레시 토큰과 일치하는지 확인 (DB 확인)
-            const storedRefreshToken = await redisTest.get(`refresh:${userId}`);
-
-            if (storedRefreshToken !== refreshToken) {
-                apiReturn.setReturnErrorMessage('유효하지 않거나 폐기된 리프레시 토큰입니다.');
-                res.status(401).json(apiReturn);
-                return;
-            }
-
-            // 3. 다시 토큰을 굽기 위해 DB에서 유저 권한 한 번 더 조회 (Populate 적용)
-            const userDoc = await Users.model.findOne({email: userId}).populate({
-                path: 'roles',
-                populate: {
-                    path: 'permissions'
+            decoded = jwt.verify(refreshToken, secretKey) as any;
+            
+            // 1-1. 전역 강제 로그아웃 (Global Logout) 검증 (리프레시 토큰 방어)
+            const globalLogoutTimeStr = await redisTest.get('global_logout_time');
+            if (globalLogoutTimeStr && decoded.iat) {
+                const globalLogoutTime = parseInt(globalLogoutTimeStr, 10);
+                if (decoded.iat < globalLogoutTime) {
+                    throw new Error('전역 로그아웃 처리된 리프레시 토큰입니다. 다시 로그인 해주세요.');
                 }
-            }).lean();
-
-            if (!userDoc) {
-                apiReturn.setReturnErrorMessage('해당 유저 정보를 찾을 수 없습니다.');
-                res.status(401).json(apiReturn);
-                return;
             }
-
-            const permissionsSet = new Set<string>();
-            if (userDoc.roles && Array.isArray(userDoc.roles)) {
-                userDoc.roles.forEach((role: any) => {
-                    if (role.permissions && Array.isArray(role.permissions)) {
-                        role.permissions.forEach((perm: any) => {
-                            if (perm.action) permissionsSet.add(perm.action);
-                        });
-                    }
-                });
-            }
-            const permissions = Array.from(permissionsSet);
-
-            // Redis 권한 캐싱 (B방식 적용)
-            await PermissionCacheService.cacheUserPermissions(userDoc.email, permissions);
-
-            // JWT Payload 최소화 (권한 제외)
-            const payload = {userId: userDoc.email};
-
-            // 4. 새로운 Access Token만 달랑 구워서 내려줌 (테스트용 1m -> 24h)
-            const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
-
-            res.cookie('token', token, {httpOnly: true});
-            apiReturn.put('token', token);
-            apiReturn.setReturnMessage('액세스 토큰 재발급 성공');
-            res.json(apiReturn);
         } catch (error) {
             logger.error(`리프레시 토큰 검증 실패: ${error}`);
-            apiReturn.setReturnErrorMessage('리프레시 토큰이 만료되었거나 올바르지 않습니다. 다시 로그인 해주세요.');
-            res.status(401).json(apiReturn);
+            const err = new Error('리프레시 토큰이 만료되었거나 올바르지 않습니다. 다시 로그인 해주세요.');
+            (err as any).status = 401;
+            throw err; // 전역 에러 핸들러로 전달
         }
+
+        const userId = decoded.userId;
+
+        // 2. Redis에 저장된 원래의 리프레시 토큰과 일치하는지 확인 (DB 확인)
+        const storedRefreshToken = await redisTest.get(`refresh:${userId}`);
+
+        if (storedRefreshToken !== refreshToken) {
+            apiReturn.setReturnErrorMessage('유효하지 않거나 폐기된 리프레시 토큰입니다.');
+            res.status(401).json(apiReturn);
+            return;
+        }
+
+        // 3. 다시 토큰을 굽기 위해 DB에서 유저 권한 한 일 번 더 조회 (Populate 적용)
+        const userDoc = await Users.model.findOne({email: userId}).populate({
+            path: 'roles',
+            populate: {
+                path: 'permissions'
+            }
+        }).lean();
+
+        if (!userDoc) {
+            apiReturn.setReturnErrorMessage('해당 유저 정보를 찾을 수 없습니다.');
+            res.status(401).json(apiReturn);
+            return;
+        }
+
+        const permissionsSet = new Set<string>();
+        let maxRoleLevel = 0;
+        if (userDoc.roles && Array.isArray(userDoc.roles)) {
+            userDoc.roles.forEach((role: any) => {
+                if (role.level && role.level > maxRoleLevel) {
+                    maxRoleLevel = role.level;
+                }
+                if (role.permissions && Array.isArray(role.permissions)) {
+                    role.permissions.forEach((perm: any) => {
+                        if (perm.action) permissionsSet.add(perm.action);
+                    });
+                }
+            });
+        }
+        const permissions = Array.from(permissionsSet);
+
+        // Redis 권한 캐싱 (B방식 적용)
+        await PermissionCacheService.cacheUserPermissions(userDoc.email, permissions);
+
+        // JWT Payload 최소화 (권한 제외)
+        const payload = {
+            userId: userDoc.email,
+            department_id: userDoc.department_id?.toString() || null,
+            level: maxRoleLevel
+        };
+
+        // 4. 새로운 Access Token만 달랑 구워서 내려줌 (테스트용 1m -> 24h)
+        const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
+
+        res.cookie('token', token, {httpOnly: true});
+        apiReturn.put('token', token);
+        apiReturn.setReturnMessage('액세스 토큰 재발급 성공');
+        res.json(apiReturn);
+    }
+
+    /**
+     * 전역 강제 로그아웃 트리거 API
+     * 시스템 관리자가 호출하면, 현재 시점 이전에 발급된 모든 JWT가 무효화됩니다.
+     */
+    public async globalLogout(req: Request, res: Response): Promise<void> {
+        const apiReturn = new ApiReturn();
+
+        // 현재 시간을 '초(seconds)' 단위로 구하여 Redis에 기록
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        await redisTest.set('global_logout_time', currentTimestamp.toString());
+
+        apiReturn.setReturnMessage('전역 로그아웃 처리가 완료되었습니다. 기존 토큰들은 즉시 무효화됩니다.');
+        res.json(apiReturn);
     }
 }
 

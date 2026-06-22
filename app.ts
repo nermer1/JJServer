@@ -24,6 +24,7 @@ import rateLimit from 'express-rate-limit';
 import {initHypervSocket} from './src/socket/HypervSocket.js';
 import HypervSocketService from './src/service/HypervSocketService.js';
 import WebPushService from './src/service/WebPushService.js';
+import SystemSettingsCacheService from './src/service/SystemSettingsCacheService.js';
 const app = express();
 const httpServer = createServer(app);
 httpServer.keepAliveTimeout = 0;
@@ -117,6 +118,11 @@ httpServer.listen(port, () => {
     logger.info(`Listening on port ${port}`);
     HypervSocketService.init(socketServer);
     WebPushService.init();
+
+    // 서버 구동 시 DB에서 시스템 설정(JWT 시크릿 등)을 메모리로 캐싱
+    SystemSettingsCacheService.loadSettings().catch((err) => {
+        console.error('SystemSettings 초기 로드 실패:', err);
+    });
 });
 httpServer.on('close', () => {
     logger.info('server down');

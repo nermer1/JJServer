@@ -22,7 +22,7 @@ router.use('/downloads', downloads);
 router.use('/otp', otp);
 router.use('/integrations', integrations);
 router.use('/auth', auth);
-router.use('/push', push);
+//router.use('/push', push);
 router.use('/user', user);
 router.use('/permission', permission);
 

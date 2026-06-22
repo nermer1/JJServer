@@ -1,5 +1,6 @@
 import express from 'express';
 import otpController from '../controller/OtpController.js';
+import {requirePermission} from '../middleware/permissionMiddleware.js';
 
 const router = express.Router();
 
@@ -9,6 +10,6 @@ const router = express.Router();
  * GoogleOtpController -> OtpController -> google, etc otp?
  */
 
-router.post('/google', otpController.getList.bind(otpController));
+router.post('/google', requirePermission('utility:otp:read'), otpController.getList.bind(otpController));
 
 export {router};

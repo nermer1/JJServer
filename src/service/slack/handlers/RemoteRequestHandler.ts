@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import { apiClient } from '../../../modules/httpClient/ApiClient.js';
+import {apiClient} from '../../../modules/httpClient/ApiClient.js';
 import {SlackMessenger} from '../../../messenger/slack/SlackMessenger.js';
 import {RemoteRequestBlocks} from '../blocks/RemoteRequestBlocks.js';
 import HypervSocketService from '../../HypervSocketService.js';
@@ -79,7 +79,7 @@ export class RemoteRequestHandler {
         // 슬랙 메시지 업데이트 (본인 채팅창)
         await apiClient.post(responseUrl, {
             replace_original: true,
-            text: `✅ 원격 접속 요청이 승인되었습니다. (요청자: ${requesterName})`,
+            text: `원격 접속 요청이 승인되었습니다. (요청자: ${requesterName})`,
             response_type: 'ephemeral'
         });
 
@@ -90,7 +90,7 @@ export class RemoteRequestHandler {
                 if (reqUser && reqUser.slackId) {
                     await slackClient.sendMessage({
                         channelId: reqUser.slackId,
-                        message: `✅ *[접속 승인]*\n요청하신 \`${vmName}\` 원격 접속 요청을 \`${approverName}\`님이 승인했습니다!`
+                        message: `*[접속 승인]*\n요청하신 \`${vmName}\` 원격 접속 요청을 \`${approverName}\`님이 승인했습니다!`
                     });
                 }
             } catch (error) {
@@ -157,7 +157,7 @@ export class RemoteRequestHandler {
         // 본인 화면(거부자) 버튼을 메시지로 대체
         await apiClient.post(responseUrl, {
             replace_original: true,
-            text: `❌ 원격 접속 요청이 거부되었습니다. (요청자: ${requesterName})`,
+            text: `원격 접속 요청이 거부되었습니다. (요청자: ${requesterName})`,
             response_type: 'ephemeral'
         });
 
@@ -168,7 +168,7 @@ export class RemoteRequestHandler {
                 if (reqUser && reqUser.slackId) {
                     await slackClient.sendMessage({
                         channelId: reqUser.slackId,
-                        message: `❌ *[접속 거부]*\n요청하신 \`${vmName}\` 원격 접속 요청을 \`${approverName}\`님이 거부했습니다.`
+                        message: `*[접속 거부]*\n요청하신 \`${vmName}\` 원격 접속 요청을 \`${approverName}\`님이 거부했습니다.`
                     });
                 }
             } catch (error) {
@@ -197,4 +197,3 @@ export class RemoteRequestHandler {
         });
     }
 }
-

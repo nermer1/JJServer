@@ -1,19 +1,25 @@
 import {Request, Response, NextFunction} from 'express';
 import jwt from 'jsonwebtoken';
-import {externalProperty} from '../properties/ServerProperty.js';
 import logger from '../utils/logger.js';
 import {ApiKeys} from '../schemas/apiKeys.js';
 import PermissionCacheService from '../service/PermissionCacheService.js';
+import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
+import redisTest from '../db/RedisTest.js';
 
 // 제외할 라우트 목록 (인증 없이 접근 가능)
 // /auth 라우터로 묶여있어 req.path가 /auth/login 또는 /auth/refresh로 들어옵니다.
-const EXCLUDE_ROUTES = ['/auth/login', '/auth/refresh', '/docs', '/apikeys', '/integrations/slack/commands', '/integrations/slack/interactivity'];
+const AUTH_CONFIG = {
+    // 인증 검사를 아예 생략하는 라우트 (토큰 파싱 X)
+    exclude: ['/auth/login', '/auth/refresh', '/docs', '/apikeys', '/integrations/slack/commands', '/integrations/slack/interactivity'],
+    // 선택적 인증 라우트 (토큰이 없어도 통과, 있으면 파싱해서 req.user에 담아줌)
+    optional: ['/interviewQuiz', '/interviewQuizSubmit']
+};
 
 export const verifyApiToken = async (req: Request, res: Response, next: NextFunction) => {
     const path = req.path;
 
     // 0. 예외 라우트 검사
-    if (EXCLUDE_ROUTES.some((route) => path.startsWith(route))) {
+    if (AUTH_CONFIG.exclude.some((route) => path.startsWith(route))) {
         return next();
     }
 
@@ -27,6 +33,9 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
     } else if (authHeader && authHeader.startsWith('Bearer ')) {
         token = authHeader.split(' ')[1];
     } else {
+        if (AUTH_CONFIG.optional.some((route) => path.startsWith(route))) {
+            return next(); // 토큰 없이 비로그인 상태로 통과
+        }
         const err = new Error('인증 토큰이 누락되었거나 형식이 올바르지 않습니다.');
         (err as any).status = 401;
         return next(err);
@@ -39,10 +48,13 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
             const cachedKey = await PermissionCacheService.getCachedApiKey(token);
             if (cachedKey) {
                 // 사용 기록 업데이트 (비동기 처리로 응답 속도 저하 방지)
-                ApiKeys.model.updateOne({key: token}, {lastUsedAt: new Date()}).exec().catch(err => {
-                    logger.error(`API Key lastUsedAt 업데이트 중 에러: ${err}`);
-                });
-                
+                ApiKeys.model
+                    .updateOne({key: token}, {lastUsedAt: new Date()})
+                    .exec()
+                    .catch((err) => {
+                        logger.error(`API Key lastUsedAt 업데이트 중 에러: ${err}`);
+                    });
+
                 (req as any).user = {
                     key: token,
                     userId: cachedKey.userId,
@@ -59,14 +71,26 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
     }
 
     // 3. JWT 검증 (Option B)
-    // 현재 LoginController.test에서 사용하는 시크릿 키는 'test'로 하드코딩 되어 있습니다.
-    // 추후 환경변수로 분리하는 것이 좋습니다.
-    const jwtSecret = externalProperty.getString('JWT_SECRET', 'test');
+    // DB의 SystemSettings에서 캐싱된 동적 시크릿 키를 우선 가져옵니다.
+    const jwtSecret = SystemSettingsCacheService.get('JWT_SECRET', 'test');
 
     try {
         const decoded = jwt.verify(token, jwtSecret) as any;
         decoded.type = 'jwt';
-        
+
+        // 3-1. 전역 강제 로그아웃 (Global Logout) 검증
+        // JWT의 발급 시간(iat)이 서버의 전역 로그아웃 시점보다 옛날이면 만료 처리
+        const globalLogoutTimeStr = await redisTest.get('global_logout_time');
+        if (globalLogoutTimeStr && decoded.iat) {
+            const globalLogoutTime = parseInt(globalLogoutTimeStr, 10);
+            if (decoded.iat < globalLogoutTime) {
+                const err = new Error('보안을 위해 전역 로그아웃 처리되었습니다. 다시 로그인해주세요.');
+                (err as any).status = 401;
+                (err as any).code = 'GLOBAL_LOGOUT';
+                return next(err);
+            }
+        }
+
         // JWT Payload 대신 Redis에서 권한 가져오기 (캐시 없으면 DB 조회 후 자동 캐싱)
         if (decoded.userId) {
             decoded.permissions = await PermissionCacheService.getCachedPermissions(decoded.userId);
