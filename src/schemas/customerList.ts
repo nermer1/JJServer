@@ -4,6 +4,7 @@ import ApiReturn from '../structure/ApiReturn.js';
 import {CustomerEtc} from './customerEtc.js';
 import mongoose, {Schema} from 'mongoose';
 import {flatten} from 'flat';
+import logger from '../utils/logger.js';
 
 class CustomerSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
@@ -29,7 +30,10 @@ class CustomerSchema extends CommonSchema {
                     if (!depts || !Array.isArray(depts)) {
                         throw new Error('소속 부서 ID(department_ids)를 배열 형태로 포함해야 합니다.');
                     }
-                    if (!depts.some((d: any) => d?.toString() === reqDeptId)) {
+                    if (!depts.some((d: any) => {
+                        const deptIdStr = (typeof d === 'object' && d !== null) ? (d._id?.toString() || d.id?.toString()) : d?.toString();
+                        return deptIdStr === reqDeptId;
+                    })) {
                         throw new Error('생성 권한이 없습니다. 본인 소속 부서 ID를 반드시 포함하여 생성해야 합니다.');
                     }
                 }
@@ -51,10 +55,10 @@ class CustomerSchema extends CommonSchema {
             apiReturn = await this.findAll(findParams);
             apiReturn.setReturnMessage('생성 성공');
             await session.commitTransaction();
-        } catch (error) {
+        } catch (error: any) {
             await session.abortTransaction();
-            console.error(error);
-            apiReturn.setReturnMessage('생성 실패');
+            logger.error(error.message, error);
+            apiReturn.setReturnMessage(error.message);
         } finally {
             session.endSession();
         }
@@ -193,9 +197,9 @@ class CustomerSchema extends CommonSchema {
         // aggregate는 순수 객체(POJO)를 반환하므로, model 옵션을 명시적으로 적어주면 더 안전하고 확실합니다.
         // Mongoose가 department 모델을 메모리에 로드하도록 동적 임포트 추가
         await import('./department.js');
-        const populatedData = await this.model.populate(returnData, { 
-            path: 'department_ids', 
-            model: 'department' 
+        const populatedData = await this.model.populate(returnData, {
+            path: 'department_ids',
+            model: 'department'
         });
 
         apiReturn.setTableData(populatedData);

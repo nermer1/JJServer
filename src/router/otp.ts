@@ -10,6 +10,6 @@ const router = express.Router();
  * GoogleOtpController -> OtpController -> google, etc otp?
  */
 
-router.post('/google', requirePermission('utility:otp:read'), otpController.getList.bind(otpController));
+router.post('/google', requirePermission('utility:otp:use:any'), otpController.getList.bind(otpController));
 
 export {router};

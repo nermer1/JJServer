@@ -66,5 +66,15 @@ export class NbbangHandler {
                 logger.error('N빵 개별 메시지 발송 에러:', error);
             }
         }
+
+        // 라우터(Router) 단계에서 찍지 않고, 내부 처리가 다 끝난 여기서 결과와 함께 통합 로깅
+        const { DBLogger } = await import('../../../utils/DBLogger.js');
+        await DBLogger.slack('N빵 정산 모달 제출 완료', { 
+            payload: payload.view.state.values, // 전체 payload는 너무 크므로 입력값만 추출
+            userCount,
+            totalAmount,
+            perPerson,
+            isSendDm 
+        }, payload.user.id);
     }
 }

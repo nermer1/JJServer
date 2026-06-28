@@ -1,5 +1,6 @@
 import {Request, Response} from 'express';
 import logger from '../../utils/logger.js';
+import {DBLogger} from '../../utils/DBLogger.js';
 import {SlackException} from '../../exception/exceptions.js';
 import {OtpHandler} from './handlers/OtpHandler.js';
 import {NbbangHandler} from './handlers/NbbangHandler.js';
@@ -16,18 +17,18 @@ export class SlackRouter {
     }
 
     public async handleCommands(req: Request, res: Response): Promise<void> {
-        const {command} = req.body;
+        const {command, user_id} = req.body;
 
         switch (command) {
             case '/otp':
             case '/otp_test':
-                logger.info('Slack Command 요청 받음', {meta: req.body});
+                await DBLogger.slack(`Command [${command}]`, req.body);
                 res.status(200).send();
                 await OtpHandler.handleOtpCommand(req, res);
                 break;
             case '/nbbang':
             case '/nbbang_test':
-                logger.info('Slack Command 요청 받음 (N빵)', {meta: req.body});
+                await DBLogger.slack(`Command [${command}]`, req.body);
                 res.status(200).send();
                 await NbbangHandler.handleCommand(req, res, this.slackClient);
                 break;
@@ -54,8 +55,6 @@ export class SlackRouter {
             const {action_id, value} = action || {};
             const actionKey = action_id || action.name;
 
-            logger.info('[Slack button]', {payload});
-
             switch (actionKey) {
                 case 'refresh_otp':
                     await OtpHandler.handleRefreshAction(payload, value, response_url);
@@ -75,12 +74,24 @@ export class SlackRouter {
                 default:
                     break;
             }
+
+            // 모든 블럭액션(버튼 클릭 등) 처리가 끝난 후 한 번에 공통으로 로깅
+            if (actionKey) {
+                await DBLogger.slack(
+                    `Slack Button [${actionKey}] 액션 처리`,
+                    {
+                        action_id,
+                        value,
+                        channel: payload.channel?.name || payload.channel?.id
+                    },
+                    payload.user?.id
+                );
+            }
             return;
         }
 
         if (payload.type === 'view_submission') {
             if (payload.view.callback_id === 'nbbang_modal_submit') {
-                logger.info('[Slack button]', {payload});
                 await NbbangHandler.handleModalSubmit(payload, this.slackClient);
             }
         }

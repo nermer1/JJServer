@@ -7,7 +7,7 @@ import {requirePermission} from '../middleware/permissionMiddleware.js';
 const router = express.Router();
 
 //router.post('/hyperv/rdp', RdpDownloadController.getFileDownload.bind(RdpDownloadController));
-router.post('/git/history', requirePermission('utility:gitlog:read'), GitHistoryDownloadController.getFileDownload.bind(GitHistoryDownloadController));
-router.post('/licenses/unidocu', requirePermission('utility:license:read'), UnidocuLicenseController.getLicenseFile.bind(UnidocuLicenseController));
+router.post('/git/history', requirePermission('utility:gitlog:use:any'), GitHistoryDownloadController.getFileDownload.bind(GitHistoryDownloadController));
+router.post('/licenses/unidocu', requirePermission('utility:license:use:any'), UnidocuLicenseController.getLicenseFile.bind(UnidocuLicenseController));
 
 export {router};

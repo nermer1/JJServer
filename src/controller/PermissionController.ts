@@ -6,8 +6,10 @@ class PermissionController {
      * 권한을 강제로 동기화합니다.
      */
     async sync(req: Request, res: Response) {
+        const userId = (req as any).user?.userId || 'SYSTEM';
+
         // 보안상 클라이언트가 던지는 Role을 무시하고, 백엔드에서 정적으로 하드코딩된 시스템 관리자에게만 동기화
-        const result = await PermissionSyncService.syncAdminPermissions();
+        const result = await PermissionSyncService.syncAdminPermissions({ trigger: 'manual', userId });
 
         if (result.success) {
             res.status(200).json({success: true, message: result.message, data: result});

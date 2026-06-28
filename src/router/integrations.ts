@@ -7,6 +7,6 @@ const router = express.Router();
 
 router.post('/slack/commands', verifySlackSignature, SlackController.commands.bind(SlackController));
 router.post('/slack/interactivity', verifySlackSignature, SlackController.interactivity.bind(SlackController));
-router.post('/slack/notify', requirePermission('system:admin'), SlackController.notify.bind(SlackController));
+router.post('/slack/notify', requirePermission('notification:slack:send'), SlackController.notify.bind(SlackController));
 
 export {router};

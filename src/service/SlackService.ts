@@ -4,6 +4,7 @@ import {schemas} from '../schemas/schemaMap.js';
 import logger from '../utils/logger.js';
 import {SlackRouter} from './slack/SlackRouter.js';
 import {basicProperty} from '../properties/ServerProperty.js';
+import {DBLogger} from '../utils/DBLogger.js';
 
 class SlackService {
     private readonly token = basicProperty.slack.token;
@@ -19,8 +20,8 @@ class SlackService {
     }
 
     public async notify(req: Request, res: Response): Promise<void> {
-        logger.info('Slack Notify 요청 받음', {meta: req.body});
         const {message, from, channelId}: {message: string; from: string; channelId?: string} = req.body;
+        // 타임아웃 방지를 위해 응답은 먼저 보냄
         res.status(200).send();
 
         // 여기서 나온 슬랙 아이디로 promise.all로 20개씩 끊어서 발송한다고 해보장
@@ -39,7 +40,11 @@ class SlackService {
         }));
 
         const result = await this.slack.broadcast(targets, '', 20);
-        logger.info('[slack notify]', {result});
+
+        await DBLogger.slack('Slack Notify 처리 완료', {
+            request: req.body,
+            result
+        });
     }
 }
 

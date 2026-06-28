@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import logger from '../utils/logger.js';
 import PermissionCacheService from '../service/PermissionCacheService.js';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
+import {DBLogger} from '../utils/DBLogger.js';
 
 // 테스트 중
 
@@ -46,12 +47,15 @@ class LoginController {
 
                 // email로 사원 정보 조회?
 
-                const userDoc = await Users.model.findOne({email}).populate({
-                    path: 'roles',
-                    populate: {
-                        path: 'permissions'
-                    }
-                }).lean();
+                const userDoc = await Users.model
+                    .findOne({email})
+                    .populate({
+                        path: 'roles',
+                        populate: {
+                            path: 'permissions'
+                        }
+                    })
+                    .lean();
 
                 if (!userDoc) {
                     apiReturn.setReturnErrorMessage('해당 유저를 찾을 수 없습니다.');
@@ -75,8 +79,8 @@ class LoginController {
                 }
                 const permissions = Array.from(permissionsSet);
 
-                // Redis 권한 캐싱 (B방식 적용)
-                await PermissionCacheService.cacheUserPermissions(userDoc.email, permissions);
+                // Redis 권한/레벨 캐싱 (무중단 갱신)
+                await PermissionCacheService.cacheUserPermissions(userDoc.email, {permissions, level: maxRoleLevel});
 
                 // JWT Payload 최소화 (권한 제외)
                 const payload = {
@@ -123,7 +127,7 @@ class LoginController {
         try {
             // 1. 리프레시 토큰 자체의 유효성 검증
             decoded = jwt.verify(refreshToken, secretKey) as any;
-            
+
             // 1-1. 전역 강제 로그아웃 (Global Logout) 검증 (리프레시 토큰 방어)
             const globalLogoutTimeStr = await redisTest.get('global_logout_time');
             if (globalLogoutTimeStr && decoded.iat) {
@@ -151,12 +155,15 @@ class LoginController {
         }
 
         // 3. 다시 토큰을 굽기 위해 DB에서 유저 권한 한 일 번 더 조회 (Populate 적용)
-        const userDoc = await Users.model.findOne({email: userId}).populate({
-            path: 'roles',
-            populate: {
-                path: 'permissions'
-            }
-        }).lean();
+        const userDoc = await Users.model
+            .findOne({email: userId})
+            .populate({
+                path: 'roles',
+                populate: {
+                    path: 'permissions'
+                }
+            })
+            .lean();
 
         if (!userDoc) {
             apiReturn.setReturnErrorMessage('해당 유저 정보를 찾을 수 없습니다.');
@@ -180,8 +187,8 @@ class LoginController {
         }
         const permissions = Array.from(permissionsSet);
 
-        // Redis 권한 캐싱 (B방식 적용)
-        await PermissionCacheService.cacheUserPermissions(userDoc.email, permissions);
+        // Redis 권한/레벨 캐싱 (무중단 갱신)
+        await PermissionCacheService.cacheUserPermissions(userDoc.email, {permissions, level: maxRoleLevel});
 
         // JWT Payload 최소화 (권한 제외)
         const payload = {
@@ -209,6 +216,13 @@ class LoginController {
         // 현재 시간을 '초(seconds)' 단위로 구하여 Redis에 기록
         const currentTimestamp = Math.floor(Date.now() / 1000);
         await redisTest.set('global_logout_time', currentTimestamp.toString());
+
+        await DBLogger.log({
+            category: 'SYSTEM',
+            action: '전역 강제 로그아웃 (Global Logout) 실행',
+            userId: (req as any).user?.userId || 'SYSTEM',
+            details: {triggerTime: currentTimestamp}
+        });
 
         apiReturn.setReturnMessage('전역 로그아웃 처리가 완료되었습니다. 기존 토큰들은 즉시 무효화됩니다.');
         res.json(apiReturn);

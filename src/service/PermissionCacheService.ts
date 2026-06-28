@@ -7,37 +7,42 @@ class PermissionCacheService {
     private readonly TTL_SECONDS = 24 * 60 * 60; // 24시간
 
     /**
-     * 유저의 권한 배열을 Redis에 캐싱합니다.
+     * 유저의 권한 배열과 최대 레벨을 Redis에 캐싱합니다.
      */
-    public async cacheUserPermissions(userId: string, permissions: string[]): Promise<void> {
+    public async cacheUserPermissions(userId: string, data: {permissions: string[], level: number}): Promise<void> {
         try {
-            await redisTest.set(`perms:${userId}`, JSON.stringify(permissions), {EX: this.TTL_SECONDS});
+            await redisTest.set(`perms:${userId}`, JSON.stringify(data), {EX: this.TTL_SECONDS});
         } catch (error) {
             logger.error(`Permission cache set error for user ${userId}: ${error}`);
         }
     }
 
     /**
-     * Redis에서 유저의 권한을 조회합니다.
+     * Redis에서 유저의 권한과 레벨을 조회합니다.
      * 만약 캐시가 없으면(또는 몽고DB 훅에 의해 지워졌다면) DB를 조회하여 다시 캐싱합니다. (무중단 갱신)
      */
-    public async getCachedPermissions(userId: string): Promise<string[]> {
+    public async getCachedPermissions(userId: string): Promise<{permissions: string[], level: number}> {
         try {
             const cached = await redisTest.get(`perms:${userId}`);
             if (cached) {
-                return JSON.parse(cached);
+                const parsed = JSON.parse(cached);
+                // 기존 배열 형태(string[]) 캐시가 남아있는 경우 하위 호환 처리
+                if (Array.isArray(parsed)) {
+                    return { permissions: parsed, level: 0 };
+                }
+                return parsed;
             }
 
             // 캐시가 날아갔다면 DB에서 실시간 권한 재조회 (방식 1: 무중단 갱신)
             logger.info(`권한 캐시 만료됨(${userId}). DB에서 다시 읽어와서 캐시를 재건합니다.`);
-            const permissions = await this.rebuildPermissionsFromDB(userId);
+            const data = await this.rebuildPermissionsFromDB(userId);
             
-            // 재건된 권한을 다시 캐싱
-            await this.cacheUserPermissions(userId, permissions);
-            return permissions;
+            // 재건된 권한과 레벨을 다시 캐싱
+            await this.cacheUserPermissions(userId, data);
+            return data;
         } catch (error) {
             logger.error(`Permission cache get error for user ${userId}: ${error}`);
-            return []; // 에러 시 안전하게 빈 배열 리턴 (접근 차단)
+            return { permissions: [], level: 0 }; // 에러 시 안전하게 리턴 (접근 차단)
         }
     }
 
@@ -73,7 +78,7 @@ class PermissionCacheService {
     /**
      * DB에서 유저의 최신 Role과 Permission을 다시 Aggregate 합니다.
      */
-    private async rebuildPermissionsFromDB(userId: string): Promise<string[]> {
+    private async rebuildPermissionsFromDB(userId: string): Promise<{permissions: string[], level: number}> {
         const userDoc = await Users.model.findOne({email: userId}).populate({
             path: 'roles',
             populate: {
@@ -81,11 +86,16 @@ class PermissionCacheService {
             }
         }).lean();
 
-        if (!userDoc) return [];
+        if (!userDoc) return { permissions: [], level: 0 };
 
         const permissionsSet = new Set<string>();
+        let maxRoleLevel = 0;
+
         if (userDoc.roles && Array.isArray(userDoc.roles)) {
             userDoc.roles.forEach((role: any) => {
+                if (role.level && role.level > maxRoleLevel) {
+                    maxRoleLevel = role.level;
+                }
                 if (role.permissions && Array.isArray(role.permissions)) {
                     role.permissions.forEach((perm: any) => {
                         if (perm.action) permissionsSet.add(perm.action);
@@ -93,7 +103,7 @@ class PermissionCacheService {
                 }
             });
         }
-        return Array.from(permissionsSet);
+        return { permissions: Array.from(permissionsSet), level: maxRoleLevel };
     }
 
     // ==========================================

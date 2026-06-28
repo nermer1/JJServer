@@ -6,7 +6,7 @@ const router = express.Router();
 
 // 신규 Socket.IO 등
 router.post('/heartbeat', requirePermission('hyperv:read:any'), HypervSocketController.heartbeat.bind(HypervSocketController));
-router.post('/request', requirePermission('hyperv:create:any'), HypervSocketController.requestVm.bind(HypervSocketController));
+router.post('/request', requirePermission('hyperv:read:any'), HypervSocketController.requestVm.bind(HypervSocketController));
 //router.post('/request-response', HypervSocketController.requestResponse.bind(HypervSocketController));
 
 export {router};

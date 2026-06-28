@@ -23,7 +23,7 @@ import PermissionSyncService from '../service/PermissionSyncService.js';
 //schedule.add('test2', '*/5 * * * * *', mailService.run3);
 
 // 새벽 3시마다 인사정보 동기화!
-schedule.add('HR_SYNC', '0 3 * * *', syncHrDataJob);
+schedule.add('HR_SYNC', '0 3 * * *', () => syncHrDataJob());
 
 // 매일 자정에 Permission 데이터 동기화
 schedule.add('PERMISSION_SYNC', '0 0 * * *', () => PermissionSyncService.syncAdminPermissions());

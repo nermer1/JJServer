@@ -91,9 +91,14 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
             }
         }
 
-        // JWT Payload 대신 Redis에서 권한 가져오기 (캐시 없으면 DB 조회 후 자동 캐싱)
+        // JWT Payload 대신 Redis에서 권한과 최신 레벨 가져오기 (캐시 없으면 DB 조회 후 자동 캐싱)
         if (decoded.userId) {
-            decoded.permissions = await PermissionCacheService.getCachedPermissions(decoded.userId);
+            const cachedData = await PermissionCacheService.getCachedPermissions(decoded.userId);
+            decoded.permissions = cachedData.permissions;
+            // 토큰에 박힌 구형 level을 무시하고 Redis에서 가져온 최신 level로 무조건 덮어쓰기
+            if (cachedData.level !== undefined) {
+                decoded.level = cachedData.level;
+            }
         } else {
             decoded.permissions = [];
         }

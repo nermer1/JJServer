@@ -72,9 +72,10 @@ class UserController {
     public async syncHrData(req: Request, res: Response): Promise<void> {
         const apiReturn = new ApiReturn();
         const {syncHrDataJob} = await import('../scheduler/hrSyncScheduler.js');
+        const userId = (req as any).user?.userId || 'SYSTEM';
         
-        // 스케줄러 잡 즉시 실행
-        await syncHrDataJob();
+        // 스케줄러 잡 즉시 실행 (수동 트리거임을 파라미터로 명시)
+        await syncHrDataJob({ trigger: 'manual', userId });
         
         apiReturn.setReturnMessage('인사 정보 수동 동기화가 정상적으로 트리거되었습니다. (결과는 로그 참조)');
         res.json(apiReturn);

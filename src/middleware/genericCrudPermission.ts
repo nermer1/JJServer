@@ -20,15 +20,13 @@ const PERMISSION_RULES: Record<string, Record<string, PermissionRule>> = {
             any: ['user:read:any'],
             dept: 'user:read:dept',
             deptField: 'department_id',
-            own: 'user:read:own',
-            ownField: 'userId'
+            own: 'user:read:own'
         },
         U: {
             any: ['user:update:any'],
             dept: 'user:update:dept',
             deptField: 'department_id',
-            own: 'user:update:own',
-            ownField: 'userId'
+            own: 'user:update:own'
         },
         D: {
             any: ['user:delete:any'],
@@ -101,7 +99,7 @@ const PERMISSION_RULES: Record<string, Record<string, PermissionRule>> = {
             any: ['role:create:any']
         },
         R: {
-            any: ['role:read:any']
+            public: true
         },
         U: {
             any: ['role:update:any']
@@ -145,6 +143,27 @@ const PERMISSION_RULES: Record<string, Record<string, PermissionRule>> = {
         U: {
             any: ['menus:update:any']
         }
+    },
+    systemSettings: {
+        C: {
+            any: ['system:admin']
+        },
+        R: {
+            any: ['system:admin']
+        },
+        U: {
+            any: ['system:admin']
+        },
+        D: {
+            any: ['system:admin']
+        }
+    },
+    auditLog: {
+        R: {
+            // 오직 최고 관리자만 관리자 대시보드 화면 등에서 로그 조회 가능
+            any: ['system:admin']
+        }
+        // C, U, D 속성을 아예 비워둠으로써 API를 통한 로그 위조/삭제 원천 차단
     }
 };
 
