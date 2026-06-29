@@ -1,6 +1,8 @@
 import {BaseSyncService} from './BaseSyncService.js';
 import {Users} from '../../schemas/users.js';
 import {Department} from '../../schemas/department.js';
+import {SlackMessenger} from '../../messenger/slack/SlackMessenger.js';
+import {basicProperty} from '../../properties/ServerProperty.js';
 
 interface HrApiUser {
     us_id: string;
@@ -25,7 +27,7 @@ export class UserSyncService extends BaseSyncService<HrApiUser> {
     protected serviceName = '유저(인사) 동기화';
 
     private readonly SYNC_RULES = {
-        excludedFields: ['slackId', 'extension'],
+        excludedFields: ['extension'], // slackId는 동기화 대상에 포함되도록 제외 목록에서 제거
         fallbacks: {
             position: '없음',
             title: '없음'
@@ -36,10 +38,23 @@ export class UserSyncService extends BaseSyncService<HrApiUser> {
      * 유저 동기화 메인 매핑 로직
      */
     protected async buildBulkOps(externalData: HrApiUser[]): Promise<any[]> {
-        // 부서 코드를 _id(ObjectId)로 매핑하기 위해 DB에서 최신 부서 목록을 가져옵니다.
-        // 부서 동기화(DepartmentSyncService)가 이전에 먼저 실행되었다고 가정합니다.
+        // 1. 부서 코드를 _id(ObjectId)로 매핑하기 위해 DB에서 최신 부서 목록을 가져옵니다.
         const departments = await Department.model.find({}).lean();
         const deptMap = new Map(departments.map((d: any) => [d.code, d._id]));
+
+        // 2. 슬랙에서 전체 유저 목록을 가져와 이메일 -> 슬랙ID 맵(Map)을 생성합니다.
+        const slackMap = new Map<string, string>();
+        try {
+            const slackMessenger = new SlackMessenger(basicProperty.slack.token);
+            const allSlackUsers = await slackMessenger.getUserList();
+            allSlackUsers.forEach((user) => {
+                if (user.profile?.email && user.id) {
+                    slackMap.set(user.profile.email.toLowerCase(), user.id);
+                }
+            });
+        } catch (error) {
+            console.error('[UserSyncService] 슬랙 유저 목록을 가져오는 데 실패했습니다 (슬랙 동기화 패스):', error);
+        }
 
         const bulkOps = externalData.map((emp) => {
             // 퇴사자 판별
@@ -57,6 +72,10 @@ export class UserSyncService extends BaseSyncService<HrApiUser> {
             // 부서 ObjectId 매핑
             const deptObjectId = deptMap.get(emp.dept_id) || null;
 
+            // 슬랙 ID 결정 (HR 데이터에 없으면 슬랙에서 긁어온 Map에서 이메일로 찾아서 매핑!)
+            const empEmail = emp.us_mail1 ? emp.us_mail1.toLowerCase() : '';
+            const resolvedSlackId = emp.slack_id || (empEmail ? slackMap.get(empEmail) : null);
+
             // 1차 매핑
             const mappedData: Record<string, any> = {
                 userId: emp.us_id,
@@ -64,7 +83,7 @@ export class UserSyncService extends BaseSyncService<HrApiUser> {
                 email: emp.us_mail1,
                 position: emp.us_pos_name,
                 title: emp.us_roll_name,
-                slackId: emp.slack_id,
+                slackId: resolvedSlackId,
                 department_id: deptObjectId
             };
 
