@@ -30,8 +30,16 @@ class SlackService {
         const regex = /\b\d{4,8}\b/;
         const match = message.match(regex);
         const sendMessage = match !== null ? match[0] : message;
-        const customer = await schemas.customerEtc.model.find({'otp.type': {$in: ['sms', 'email']}}, {'otp.$': 1, code: 1, _id: 0}).lean();
-        const customer1 = customer.find((item: any) => item.otp.some((o: any) => o.user === from));
+        // DB 단에서 바로 from과 일치하는 1건만 가져오도록 최적화
+        const customer1 = (await schemas.customerEtc.model
+            .findOne(
+                {
+                    'otp.type': {$in: ['sms', 'email']},
+                    'otp.user': from
+                },
+                {code: 1, _id: 0}
+            )
+            .lean()) as any;
         const code = customer1?.code ?? '';
         const slackIds = await schemas.users.model.find({'settings.notifications.slack.otp': code}, {slackId: 1, _id: 0});
         const targets: any[] = slackIds.map((item: any) => ({

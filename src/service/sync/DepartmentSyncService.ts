@@ -2,9 +2,9 @@ import {BaseSyncService} from './BaseSyncService.js';
 import {Department} from '../../schemas/department.js';
 
 interface HrApiDepartment {
-    dept_id: string;     // 부서 코드
-    dept_name: string;   // 부서 이름
-    parent?: string;     // 상위 부서 코드 (실제 API 필드명: parent)
+    dept_id: string; // 부서 코드
+    dept_name: string; // 부서 이름
+    parent?: string; // 상위 부서 코드 (실제 API 필드명: parent)
 }
 
 export class DepartmentSyncService extends BaseSyncService<HrApiDepartment> {
@@ -56,8 +56,8 @@ export class DepartmentSyncService extends BaseSyncService<HrApiDepartment> {
             if (actualParentObjectId && String(dept.parent_id) !== String(actualParentObjectId)) {
                 parentIdBulkOps.push({
                     updateOne: {
-                        filter: { _id: dept._id },
-                        update: { $set: { parent_id: actualParentObjectId } }
+                        filter: {_id: dept._id},
+                        update: {$set: {parent_id: actualParentObjectId}}
                     }
                 });
             }
@@ -65,7 +65,6 @@ export class DepartmentSyncService extends BaseSyncService<HrApiDepartment> {
 
         if (parentIdBulkOps.length > 0) {
             const result = await this.model.bulkWrite(parentIdBulkOps);
-            // logger.info 대신 console 사용(임시) 또는 상단 import 활용 가능
             console.log(`[부서 동기화] 부모-자식(parent_id) 계층 매핑 완료: ${result.modifiedCount}건 수정됨`);
         }
     }

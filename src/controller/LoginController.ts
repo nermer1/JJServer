@@ -94,7 +94,7 @@ class LoginController {
                 const refreshToken = jwt.sign({userId: userDoc.email}, secretKey, {expiresIn: '14d'});
                 await redisTest.set(`refresh:${userDoc.email}`, refreshToken, {EX: 14 * 24 * 60 * 60});
 
-                res.cookie('token', token, {httpOnly: true});
+                res.cookie('token', token, {httpOnly: true, maxAge: 24 * 60 * 60 * 1000});
                 apiReturn.put('token', token);
                 apiReturn.put('refreshToken', refreshToken);
                 apiReturn.setReturnMessage('액세스 토큰 및 리프레시 토큰 발행');
@@ -200,7 +200,7 @@ class LoginController {
         // 4. 새로운 Access Token만 달랑 구워서 내려줌 (테스트용 1m -> 24h)
         const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
 
-        res.cookie('token', token, {httpOnly: true});
+        res.cookie('token', token, {httpOnly: true, maxAge: 24 * 60 * 60 * 1000});
         apiReturn.put('token', token);
         apiReturn.setReturnMessage('액세스 토큰 재발급 성공');
         res.json(apiReturn);

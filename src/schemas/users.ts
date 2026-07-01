@@ -100,6 +100,15 @@ class UserSchema extends CommonSchema {
 const POSITION_LIST = ['매니저', '상무', '전무', '대표이사'];
 const TITLE_LIST = ['없음', '팀장', '파트장', '그룹장', '부사장', '대표이사'];
 
+const ipSchema = new Schema(
+    {
+        type: {type: String, required: true}, // 기기 종류 (예: desktop, mobile, ip_phone)
+        name: {type: String, default: ''}, // 기기 별칭 (예: 개인 pc나 노트북 등)
+        address: {type: String, required: true} // 할당된 IP 주소
+    },
+    {_id: false}
+);
+
 const settingsSchema = new Schema(
     {
         notifications: {
@@ -175,6 +184,7 @@ const userSchemaDefinition = new Schema({
             ref: 'role'
         }
     ],
+    ips: {type: [ipSchema], default: []},
     settings: {type: settingsSchema, default: () => ({})}
 });
 
