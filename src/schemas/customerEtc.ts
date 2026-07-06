@@ -99,7 +99,7 @@ const versionControlSchema = new Schema(
 
 const infoSchema = new Schema(
     {
-        data: {type: String, default: ''}
+        data: {type: Object, default: {}}
     },
     {_id: false}
 );
@@ -111,7 +111,7 @@ const CustomerEtc = new CustomerEtcSchema('customerEtc', {
     pc: {type: [pcSchema]},
     version_control: {type: versionControlSchema, default: () => ({})},
     ssh: {type: [sshSchema]},
-    info: {type: infoSchema, default: () => ({data: ''})}
+    info: {type: infoSchema, default: () => ({data: {}})}
 });
 
 export {CustomerEtc};
