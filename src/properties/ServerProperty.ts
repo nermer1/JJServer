@@ -131,6 +131,11 @@ class ServerProperty extends Property {
             },
             wiki: {
                 token: this.getDecyptProperty(this.getString('OUTLINE_WIKI_TOKEN'))
+            },
+            redis: {
+                url: this.getString('REDIS_URL', 'redis://192.168.11.17:6379'),
+                // 운영(prd)은 0번, 그 외(dev, alpha, localhost 등)는 1번을 기본값으로 사용
+                database: this.getNumber('REDIS_DB', this.serverAlias === 'prd' ? '0' : '1')
             }
         };
     }

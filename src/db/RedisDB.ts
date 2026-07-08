@@ -8,7 +8,10 @@ class RedisDB extends BaseDB {
 
     constructor() {
         super();
-        this.client = createClient({url: `redis://192.168.11.17:6379`});
+        this.client = createClient({
+            url: basicProperty.redis.url,
+            database: basicProperty.redis.database
+        });
 
         this.client.on('error', (err) => {
             console.error(err);

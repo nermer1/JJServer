@@ -11,6 +11,7 @@ import {router as auth} from './auth.js';
 import {router as push} from './push.js';
 import {router as user} from './user.js';
 import {router as permission} from './permission.js';
+import {router as system} from './system.js';
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ router.use('/auth', auth);
 //router.use('/push', push);
 router.use('/user', user);
 router.use('/permission', permission);
+router.use('/system', system);
 
 router.post('/:collection', genericCrudPermission, PrdApiController.call.bind(PrdApiController));
 
