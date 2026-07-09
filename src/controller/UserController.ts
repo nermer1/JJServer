@@ -2,8 +2,97 @@ import {Request, Response} from 'express';
 import ApiReturn from '../structure/ApiReturn.js';
 import {Users} from '../schemas/users.js';
 import MenuService from '../service/MenuService.js';
+import prdApiService from '../service/PrdApiService.js';
+import PermissionCacheService from '../service/PermissionCacheService.js';
+import {DBLogger} from '../utils/DBLogger.js';
+import logger from '../utils/logger.js';
 
 class UserController {
+    /**
+     * 만능 라우터(PrdApiController)를 대체할 도메인 전용 핸들러
+     * 프론트엔드의 /api/v1/prd/users 요청을 가로채어 처리합니다.
+     */
+    public async call(req: Request, res: Response): Promise<void> {
+        const params = req.body;
+        const reqUser = (req as any).user;
+        (params as any).reqUser = reqUser; // 내부 스키마 처리를 위해 주입
+
+        try {
+            // 1. 하극상 방지 로직 (마법 제거 및 명시적 처리)
+            if (params.type === 'C' || params.type === 'U') {
+                await this.validateRoleHierarchy(params, reqUser);
+            }
+
+            // 2. DB 비즈니스 로직 위임 (기존 PrdApiService 재사용)
+            const returnData = await prdApiService.call('users', params);
+
+            // 3. 작업 완료 후 명시적 훅(Hook) 캐시 처리 및 로깅
+            if (params.type && params.type !== 'R') {
+                const actionNameMap: Record<string, string> = {C: '생성', U: '수정', D: '삭제'};
+                const actionTypeMap: Record<string, string> = {C: 'CREATE', U: 'UPDATE', D: 'DELETE'};
+
+                await DBLogger.log({
+                    category: 'DATA',
+                    action: `users 데이터 ${actionNameMap[params.type] || params.type}`,
+                    target: 'users',
+                    actionType: actionTypeMap[params.type] || 'EXECUTE',
+                    userId: reqUser?.userId || 'UNKNOWN',
+                    details: params.data
+                });
+
+                // 명시적으로 캐시 삭제 (email 기준)
+                let targetEmail = '';
+                const inputData = Array.isArray(params.data.tableData) ? params.data.tableData[0] : params.data.tableData;
+                if (inputData && inputData.email) {
+                    targetEmail = inputData.email;
+                } else if (inputData && inputData._id) {
+                    const doc = await Users.model.findById(inputData._id).lean();
+                    if (doc) targetEmail = doc.email;
+                }
+
+                if (targetEmail) {
+                    await PermissionCacheService.clearUserCache(targetEmail);
+                    logger.info(`[UserController] ${targetEmail} 유저의 권한 캐시 리로드 완료`);
+                }
+            }
+
+            res.json(returnData);
+        } catch (error: any) {
+            logger.error(`[UserController] 에러 발생: ${error.message}`);
+            const apiReturn = new ApiReturn();
+            apiReturn.setReturnErrorMessage(error.message);
+            res.json(apiReturn);
+        }
+    }
+
+    /**
+     * 권한 부여 시 하극상(Privilege Escalation)을 방지하는 명시적 로직
+     */
+    private async validateRoleHierarchy(params: any, reqUser: any) {
+        let inputData: any = params.data.tableData;
+        if (Array.isArray(inputData)) inputData = inputData[0];
+        if (!inputData || !inputData.roles) return;
+        if (!reqUser || reqUser.level === undefined) return;
+
+        if (!reqUser.permissions?.includes('system:admin')) {
+            delete inputData.roles;
+            return;
+        }
+
+        const {Role} = await import('../schemas/role.js');
+        const targetRoles = await Role.model.find({_id: {$in: inputData.roles}}).lean();
+        let targetMaxLevel = 0;
+        targetRoles.forEach((r: any) => {
+            if (r.level && r.level > targetMaxLevel) {
+                targetMaxLevel = r.level;
+            }
+        });
+
+        if (targetMaxLevel > reqUser.level) {
+            throw new Error(`본인의 권한 레벨(${reqUser.level})을 초과하는 롤(Level: ${targetMaxLevel})은 부여할 수 없습니다.`);
+        }
+    }
+
     /**
      * 내 정보, 권한, 동적 메뉴 조회
      */
@@ -73,14 +162,13 @@ class UserController {
         const apiReturn = new ApiReturn();
         const {syncHrDataJob} = await import('../scheduler/hrSyncScheduler.js');
         const userId = (req as any).user?.userId || 'SYSTEM';
-        
+
         // 스케줄러 잡 즉시 실행 (수동 트리거임을 파라미터로 명시)
-        await syncHrDataJob({ trigger: 'manual', userId });
-        
+        await syncHrDataJob({trigger: 'manual', userId});
+
         apiReturn.setReturnMessage('인사 정보 수동 동기화가 정상적으로 트리거되었습니다. (결과는 로그 참조)');
         res.json(apiReturn);
     }
 }
 
 export default new UserController();
-

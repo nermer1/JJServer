@@ -1,5 +1,4 @@
 import logger from '../utils/logger.js';
-import UniPostCipher from '../cipher/UniPostCipher.js';
 
 class SystemSettingsCacheService {
     private static cache = new Map<string, string>();
@@ -18,12 +17,16 @@ class SystemSettingsCacheService {
             this.cache.clear();
             settings.forEach((setting: any) => {
                 if (setting.key && setting.value !== undefined) {
-                    try {
-                        // 서버 캐시에는 평문으로 복호화해서 올려둠 (빠른 토큰 검증 등을 위해)
-                        const decryptedValue = UniPostCipher.getInstance().decrypt(setting.value);
-                        this.cache.set(setting.key, decryptedValue);
-                    } catch (e) {
-                        // 만약 기존 평문 데이터라 복호화에 실패하면 평문 그대로 캐싱
+                    if (setting.is_encrypted) {
+                        try {
+                            // 서버 캐시에는 평문으로 복호화해서 올려둠
+                            const decryptedValue = SystemSettings.uniPostCipher.decrypt(setting.value);
+                            this.cache.set(setting.key, decryptedValue);
+                        } catch (e) {
+                            this.cache.set(setting.key, setting.value);
+                        }
+                    } else {
+                        // 평문은 그대로 캐싱
                         this.cache.set(setting.key, setting.value);
                     }
                 }
@@ -36,7 +39,7 @@ class SystemSettingsCacheService {
 
     /**
      * 메모리에 캐시된 설정값을 가져옵니다. DB 접근 없이 즉시 반환됩니다.
-     * @param key 설정 키 (예: 'JWT_SECRET')
+     * @param key 설정 키 (예: 'SMTP_PORT')
      * @param defaultValue 캐시에 없을 경우 반환할 기본값
      */
     public static get(key: string, defaultValue?: string): string {
@@ -45,7 +48,18 @@ class SystemSettingsCacheService {
         }
         return defaultValue || '';
     }
+
+    /**
+     * 필수 시스템 설정값을 가져옵니다. 값이 없으면 치명적 에러를 발생시킵니다. (Fail-Fast)
+     * @param key 설정 키 (예: 'JWT_SECRET')
+     */
+    public static getRequired(key: string): string {
+        if (this.cache.has(key)) {
+            const value = this.cache.get(key);
+            if (value && value.trim() !== '') return value;
+        }
+        throw new Error(`[CRITICAL] 필수 시스템 설정값(${key})이 존재하지 않습니다. 어드민 시스템 설정에서 키를 등록해주세요.`);
+    }
 }
 
 export default SystemSettingsCacheService;
-

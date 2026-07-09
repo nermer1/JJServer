@@ -6,10 +6,31 @@ import {SlackRouter} from './slack/SlackRouter.js';
 import {basicProperty} from '../properties/ServerProperty.js';
 import {DBLogger} from '../utils/DBLogger.js';
 
+import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
+
 class SlackService {
-    private readonly token = basicProperty.slack.token;
-    private readonly slack = new SlackMessenger(this.token);
-    private readonly router = new SlackRouter(this.slack);
+    private _slack: SlackMessenger | null = null;
+    private _router: SlackRouter | null = null;
+
+    private get slack() {
+        if (!this._slack) {
+            this._slack = new SlackMessenger(SystemSettingsCacheService.getRequired('SLACK_TOKEN'));
+        }
+        return this._slack;
+    }
+
+    private get router() {
+        if (!this._router) {
+            this._router = new SlackRouter(this.slack);
+        }
+        return this._router;
+    }
+
+    public reloadClient() {
+        this._slack = null;
+        this._router = null;
+        logger.info('[Slack] 슬랙 봇 클라이언트 캐시가 비워졌습니다. (다음 호출 시 재초기화)');
+    }
 
     public async commands(req: Request, res: Response): Promise<void> {
         await this.router.handleCommands(req, res);

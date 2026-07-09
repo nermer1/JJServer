@@ -106,32 +106,6 @@ class ServerProperty extends Property {
                 password: this.getDecyptProperty(this.getString('DB_PASSWORD')),
                 host: this.getString('DB_HOST')
             },
-            smtp: {
-                user: this.getDecyptProperty(this.getString('SMTP_USER')),
-                password: this.getDecyptProperty(this.getString('SMTP_PASS')),
-                port: this.getNumber('SMTP_PORT'),
-                host: this.getString('SMTP_HOST')
-            },
-            selenium: {
-                support: {
-                    user: this.getDecyptProperty(this.getString('SELENIUM_SUPPORT_USER')),
-                    password: this.getDecyptProperty(this.getString('SELENIUM_SUPPORT_PASS'))
-                },
-                portal: {
-                    user: this.getDecyptProperty(this.getString('SELENIUM_PORTAL_USER')),
-                    password: this.getDecyptProperty(this.getString('SELENIUM_PORTAL_PASS'))
-                }
-            },
-            gitLap: {
-                pak: this.getDecyptProperty('49f52143ab095e9344216915bc9ed79c535341042a3d6835a4860d6659b39dd8')
-            },
-            slack: {
-                token: this.getDecyptProperty(this.getString('SLACK_TOKEN')),
-                signingSecret: this.getDecyptProperty(this.getString('SLACK_SIGNING_SECRET', ''))
-            },
-            wiki: {
-                token: this.getDecyptProperty(this.getString('OUTLINE_WIKI_TOKEN'))
-            },
             redis: {
                 url: this.getString('REDIS_URL', 'redis://192.168.11.17:6379'),
                 // 운영(prd)은 0번, 그 외(dev, alpha, localhost 등)는 1번을 기본값으로 사용

@@ -4,7 +4,7 @@ class SystemService {
     public async getCombinedIpData(hasDetailPermission: boolean) {
         // 1. users의 ips 배열과 customerEtc의 pc 배열을 DB에서 가져옴
         const customerEtcList = (await schemas.customerEtc.model.find({}, {pc: 1, _id: 0}).lean()) as any[];
-        const usersList = (await schemas.users.model.find({}, {ips: 1, _id: 0}).lean()) as any[];
+        const usersList = (await schemas.users.model.find({}, {name: 1, ips: 1, _id: 0}).lean()) as any[];
 
         let combinedList: any[] = [];
 
@@ -28,7 +28,8 @@ class SystemService {
                     source: 'users',
                     ip: i.address,
                     type: i.type,
-                    name: i.name
+                    deviceName: i.name,
+                    userName: u.name
                 }))
             );
 
@@ -48,4 +49,3 @@ class SystemService {
 }
 
 export default new SystemService();
-

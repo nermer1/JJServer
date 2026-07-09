@@ -1,12 +1,12 @@
 import {Request, Response, NextFunction} from 'express';
 import crypto from 'crypto';
-import {basicProperty} from '../properties/ServerProperty.js';
+import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 import logger from '../utils/logger.js';
 
 export const verifySlackSignature = (req: Request, res: Response, next: NextFunction) => {
     const slackSignature = req.headers['x-slack-signature'] as string;
     const slackTimestamp = req.headers['x-slack-request-timestamp'] as string;
-    const slackSigningSecret = basicProperty.slack.signingSecret;
+    const slackSigningSecret = SystemSettingsCacheService.get('SLACK_SIGNING_SECRET', '');
 
     if (!slackSigningSecret) {
         logger.error('Slack Signing Secret is not configured (SLACK_SIGNING_SECRET).');

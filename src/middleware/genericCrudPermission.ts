@@ -1,5 +1,6 @@
 import {Request, Response, NextFunction} from 'express';
 import logger from '../utils/logger.js';
+import ApiReturn from '../structure/ApiReturn.js';
 
 type PermissionRule = {
     public?: boolean; // 이 값이 true면 인증/권한 없이 누구나 접근 가능 (비로그인 허용)
@@ -11,48 +12,12 @@ type PermissionRule = {
 };
 
 // 권한 규칙 설정 (컬렉션명 -> 행위(R,U,C,D) -> 권한 규칙)
+// users 룰은 domainPermissions.ts 로 이관됨
+// apiKeys 룰은 domainPermissions.ts 로 이관됨
+// role 룰은 domainPermissions.ts 로 이관됨
+// permission 룰은 domainPermissions.ts 로 이관됨
+// systemSettings 룰은 domainPermissions.ts 로 이관됨
 const PERMISSION_RULES: Record<string, Record<string, PermissionRule>> = {
-    users: {
-        C: {
-            any: ['user:create:any']
-        },
-        R: {
-            any: ['user:read:any'],
-            dept: 'user:read:dept',
-            deptField: 'department_id',
-            own: 'user:read:own'
-        },
-        U: {
-            any: ['user:update:any'],
-            dept: 'user:update:dept',
-            deptField: 'department_id',
-            own: 'user:update:own'
-        },
-        D: {
-            any: ['user:delete:any'],
-            dept: 'user:delete:dept',
-            deptField: 'department_id'
-        }
-    },
-    apiKeys: {
-        C: {
-            own: 'apikey:create:own'
-        },
-        R: {
-            any: ['apikey:read:any'],
-            own: 'apikey:read:own',
-            ownField: 'userId'
-        },
-        U: {
-            own: 'apikey:update:own',
-            ownField: 'userId'
-        },
-        D: {
-            any: ['apikey:delete:any'],
-            own: 'apikey:delete:own',
-            ownField: 'userId'
-        }
-    },
     interviewQuiz: {
         C: {},
         R: {
@@ -94,34 +59,6 @@ const PERMISSION_RULES: Record<string, Record<string, PermissionRule>> = {
             deptField: 'department_ids'
         }
     },
-    role: {
-        C: {
-            any: ['role:create:any']
-        },
-        R: {
-            public: true
-        },
-        U: {
-            any: ['role:update:any']
-        },
-        D: {
-            any: ['role:delete:any']
-        }
-    },
-    permission: {
-        C: {
-            any: ['permission:create:any']
-        },
-        R: {
-            any: ['permission:read:any']
-        },
-        U: {
-            any: ['permission:update:any']
-        },
-        D: {
-            any: ['permission:delete:any']
-        }
-    },
     department: {
         C: {
             any: ['department:create:any']
@@ -144,20 +81,6 @@ const PERMISSION_RULES: Record<string, Record<string, PermissionRule>> = {
             any: ['menus:update:any']
         }
     },
-    systemSettings: {
-        C: {
-            any: ['system:admin']
-        },
-        R: {
-            any: ['system:admin']
-        },
-        U: {
-            any: ['system:admin']
-        },
-        D: {
-            any: ['system:admin']
-        }
-    },
     auditLog: {
         R: {
             // 오직 최고 관리자만 관리자 대시보드 화면 등에서 로그 조회 가능
@@ -176,18 +99,21 @@ export const genericCrudPermission = (req: Request, res: Response, next: NextFun
     const collectionName = req.params.collection;
     const params = req.body;
     const user = (req as any).user; // authMiddleware에서 넘어온 유저 정보 (userId, permissions)
+    const apiReturn = new ApiReturn();
 
     // 1. 해당 컬렉션과 요청 타입(R, U, C, D)에 매핑된 규칙 찾기
     const collectionRules = PERMISSION_RULES[collectionName];
     if (!collectionRules) {
         logger.warn(`[Security] 화이트리스트에 없는 컬렉션 접근 시도: ${collectionName}`);
-        return res.status(403).json({ok: false, message: '허용되지 않은 API 접근입니다.'});
+        apiReturn.setReturnErrorMessage('허용되지 않은 API 접근입니다.');
+        return res.status(403).json(apiReturn);
     }
 
     const rule = collectionRules[params.type];
     if (!rule) {
         logger.warn(`[Security] 허용되지 않은 액션(${params.type}) 시도: ${collectionName}`);
-        return res.status(403).json({ok: false, message: '해당 컬렉션에 대해 허용되지 않은 작업입니다.'});
+        apiReturn.setReturnErrorMessage('해당 컬렉션에 대해 허용되지 않은 작업입니다.');
+        return res.status(403).json(apiReturn);
     }
 
     // 1.5. 'public' 권한 검사 (비로그인 사용자 무사 통과)
@@ -198,7 +124,8 @@ export const genericCrudPermission = (req: Request, res: Response, next: NextFun
     // 2. 인증 정보 확인 (방어 로직) - public이 아닐 때만 확인
     if (!user || !user.permissions || !Array.isArray(user.permissions)) {
         logger.warn(`[GenericPermission] 인증되지 않은 접근 시도 (${collectionName})`);
-        return res.status(401).json({ok: false, message: '인증 정보가 없습니다.'});
+        apiReturn.setReturnErrorMessage('인증 정보가 없습니다.');
+        return res.status(401).json(apiReturn);
     }
 
     // 2. 'any' 권한 검사 (API Key / 최고관리자 등 프리패스 검사)
@@ -215,7 +142,8 @@ export const genericCrudPermission = (req: Request, res: Response, next: NextFun
     if (user.type === 'apikey') {
         const identifier = user.key || 'Unknown';
         logger.warn(`[Permission Denied] API Key 접근 거부 (Key: ${identifier}, Req: ${collectionName}[${params.type}])`);
-        return res.status(403).json({ok: false, message: 'API Key에 해당 데이터 접근 권한이 없습니다.'});
+        apiReturn.setReturnErrorMessage('API Key에 해당 데이터 접근 권한이 없습니다.');
+        return res.status(403).json(apiReturn);
     }
 
     // 4. 'dept' 권한 검사 (부서 전용 ABAC 데이터 필터링)
@@ -223,7 +151,8 @@ export const genericCrudPermission = (req: Request, res: Response, next: NextFun
     if (rule.dept && user.permissions.includes(rule.dept)) {
         if (!user.department_id) {
             logger.warn(`[Permission Denied] 부서 정보가 없는 유저의 부서 권한 접근 (User: ${user.userId})`);
-            return res.status(403).json({ok: false, message: '소속 부서 정보가 없어 접근할 수 없습니다.'});
+            apiReturn.setReturnErrorMessage('소속 부서 정보가 없어 접근할 수 없습니다.');
+            return res.status(403).json(apiReturn);
         }
 
         if (!params.option) params.option = {};
@@ -248,5 +177,6 @@ export const genericCrudPermission = (req: Request, res: Response, next: NextFun
 
     // 6. 모든 권한 검사 실패 시
     logger.warn(`[Permission Denied] 접근 권한 없음 (User: ${user.userId || 'Unknown'}, Req: ${collectionName}[${params.type}])`);
-    return res.status(403).json({ok: false, message: '해당 기능을 사용할 권한이 없습니다.'});
+    apiReturn.setReturnErrorMessage('해당 기능을 사용할 권한이 없습니다.');
+    return res.status(403).json(apiReturn);
 };

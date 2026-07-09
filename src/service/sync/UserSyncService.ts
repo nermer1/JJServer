@@ -2,6 +2,7 @@ import {BaseSyncService} from './BaseSyncService.js';
 import {Users} from '../../schemas/users.js';
 import {Department} from '../../schemas/department.js';
 import {SlackMessenger} from '../../messenger/slack/SlackMessenger.js';
+import SystemSettingsCacheService from '../../service/SystemSettingsCacheService.js';
 import {basicProperty} from '../../properties/ServerProperty.js';
 
 interface HrApiUser {
@@ -22,7 +23,9 @@ interface HrApiUser {
 }
 
 export class UserSyncService extends BaseSyncService<HrApiUser> {
-    protected apiUrl = 'http://192.168.12.211:4100/api/users';
+    protected get apiUrl(): string {
+        return SystemSettingsCacheService.getRequired('HR_API_USERS_URL');
+    }
     protected model = Users.model;
     protected serviceName = '유저(인사) 동기화';
 
@@ -45,7 +48,7 @@ export class UserSyncService extends BaseSyncService<HrApiUser> {
         // 2. 슬랙에서 전체 유저 목록을 가져와 이메일 -> 슬랙ID 맵(Map)을 생성합니다.
         const slackMap = new Map<string, string>();
         try {
-            const slackMessenger = new SlackMessenger(basicProperty.slack.token);
+            const slackMessenger = new SlackMessenger(SystemSettingsCacheService.get('SLACK_TOKEN', ''));
             const allSlackUsers = await slackMessenger.getUserList();
             allSlackUsers.forEach((user) => {
                 if (user.profile?.email && user.id) {

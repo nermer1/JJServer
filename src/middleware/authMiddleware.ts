@@ -72,7 +72,7 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
 
     // 3. JWT 검증 (Option B)
     // DB의 SystemSettings에서 캐싱된 동적 시크릿 키를 우선 가져옵니다.
-    const jwtSecret = SystemSettingsCacheService.get('JWT_SECRET', 'test');
+    const jwtSecret = SystemSettingsCacheService.getRequired('JWT_SECRET');
 
     try {
         const decoded = jwt.verify(token, jwtSecret) as any;

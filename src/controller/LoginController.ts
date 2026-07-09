@@ -43,7 +43,7 @@ class LoginController {
             } else {
                 // 토큰 발행
                 // 시크릿키는 DB(SystemSettings)에서 동적으로 가져옵니다. 기본값은 'test'
-                const secretKey = SystemSettingsCacheService.get('JWT_SECRET', 'test');
+                const secretKey = SystemSettingsCacheService.getRequired('JWT_SECRET');
 
                 // email로 사원 정보 조회?
 
@@ -121,7 +121,7 @@ class LoginController {
             return;
         }
 
-        const secretKey = SystemSettingsCacheService.get('JWT_SECRET', 'test');
+        const secretKey = SystemSettingsCacheService.getRequired('JWT_SECRET');
 
         let decoded;
         try {
@@ -236,7 +236,9 @@ async function storeAuthNumber(mail: string) {
 
     const ttl = await redisTest.client?.ttl(authNumber);
 
-    JJMail.sendMailWithHtml('(주)유니포스트" <test@unidocu.unipost.co.kr>', mail, 'helper 인증 번호', authNumber);
+    // 비동기로 메일을 보내되, 에러가 발생해도 서버가 죽지 않도록 catch를 달아줍니다 (비동기 Fire-and-Forget)
+    JJMail.sendMailWithMustache('(주)유니포스트" <test@unidocu.unipost.co.kr>', mail, '[유니헬퍼] 로그인 인증번호 안내', 'otp', {authNumber})
+        .catch(err => logger.error(`[Mail Error] 인증번호 메일 전송 실패: ${err.message}`));
 
     return {ttl};
 }

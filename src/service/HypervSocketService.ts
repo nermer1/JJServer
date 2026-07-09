@@ -5,6 +5,7 @@ import {Server} from 'socket.io';
 import WebPushService from './WebPushService.js';
 import {schemas} from '../schemas/schemaMap.js';
 import redisTest from '../db/RedisTest.js';
+import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 import {SlackMessenger} from '../messenger/slack/SlackMessenger.js';
 import {basicProperty} from '../properties/ServerProperty.js';
 import {RemoteRequestBlocks} from './slack/blocks/RemoteRequestBlocks.js';
@@ -12,8 +13,20 @@ import {RemoteRequestBlocks} from './slack/blocks/RemoteRequestBlocks.js';
 const execAsync = promisify(exec);
 
 class HypervSocketService {
-    private readonly slackClient = new SlackMessenger(basicProperty.slack.token);
+    private _slackClient: SlackMessenger | null = null;
     private hostData: ObjType = {};
+
+    private get slackClient() {
+        if (!this._slackClient) {
+            this._slackClient = new SlackMessenger(SystemSettingsCacheService.getRequired('SLACK_TOKEN'));
+        }
+        return this._slackClient;
+    }
+
+    public reloadClient() {
+        this._slackClient = null;
+        logger.info('[HyperV] 슬랙 봇 클라이언트 캐시가 비워졌습니다. (다음 호출 시 재초기화)');
+    }
 
     private userMap = new Map<string, string>();
     private isDirty = false;

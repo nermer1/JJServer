@@ -20,51 +20,11 @@ class UserSchema extends CommonSchema {
     }
 
     async insert(params: DBParamsType) {
-        await this.validateRoleHierarchy(params);
         return super.insert(params);
     }
 
     async update(params: DBParamsType) {
-        await this.validateRoleHierarchy(params);
         return super.update(params);
-    }
-
-    /**
-     * 권한 부여 시 하극상(Privilege Escalation)을 방지하는 로직
-     */
-    private async validateRoleHierarchy(params: DBParamsType) {
-        let inputData: any = params.data.tableData;
-        if (Array.isArray(inputData)) inputData = inputData[0];
-
-        // 권한 수정 요청이 아니면 패스
-        if (!inputData || !inputData.roles) return;
-
-        const reqUser = (params as any).reqUser;
-        // 시스템 내부 호출이거나 토큰 파싱 전이면 통과
-        if (!reqUser || reqUser.level === undefined) return;
-
-        // 방어 로직: 최고 관리자(system:admin) 권한이 없는 일반 사용자가
-        // 포스트맨 등으로 API를 찔러서 roles(권한) 필드를 임의로 수정하려고 하면,
-        // 해당 필드를 아예 무시(삭제)하여 취약점을 원천 차단합니다.
-        if (!reqUser.permissions?.includes('system:admin')) {
-            delete inputData.roles;
-            return;
-        }
-
-        const {Role} = await import('./role.js');
-
-        const targetRoles = await Role.model.find({_id: {$in: inputData.roles}}).lean();
-        let targetMaxLevel = 0;
-        targetRoles.forEach((r: any) => {
-            if (r.level && r.level > targetMaxLevel) {
-                targetMaxLevel = r.level;
-            }
-        });
-
-        // 타겟 롤의 레벨이 내 레벨보다 "초과(>)"하면 에러 (동급은 허용)
-        if (targetMaxLevel > reqUser.level) {
-            throw new Error(`본인의 권한 레벨(${reqUser.level})을 초과하는 롤(Level: ${targetMaxLevel})은 부여할 수 없습니다.`);
-        }
     }
 }
 
@@ -188,20 +148,9 @@ const userSchemaDefinition = new Schema({
     settings: {type: settingsSchema, default: () => ({})}
 });
 
-// 유저 정보가 업데이트되면(역할 등) 캐시를 강제로 비워 무중단 갱신을 유도합니다.
-userSchemaDefinition.post('save', async function (doc) {
-    if (doc && doc.email) {
-        const PermissionCacheService = (await import('../service/PermissionCacheService.js')).default;
-        await PermissionCacheService.clearUserCache(doc.email);
-    }
-});
-
-userSchemaDefinition.post('findOneAndUpdate', async function (doc) {
-    if (doc && doc.email) {
-        const PermissionCacheService = (await import('../service/PermissionCacheService.js')).default;
-        await PermissionCacheService.clearUserCache(doc.email);
-    }
-});
+// 마법(Hook)은 UserController로 명시적으로 분리되었으므로 삭제됨
+// userSchemaDefinition.post('save', ...)
+// userSchemaDefinition.post('findOneAndUpdate', ...)
 
 const Users = new UserSchema('users', userSchemaDefinition);
 

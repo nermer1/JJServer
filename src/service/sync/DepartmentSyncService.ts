@@ -1,5 +1,6 @@
 import {BaseSyncService} from './BaseSyncService.js';
 import {Department} from '../../schemas/department.js';
+import SystemSettingsCacheService from '../../service/SystemSettingsCacheService.js';
 
 interface HrApiDepartment {
     dept_id: string; // 부서 코드
@@ -8,7 +9,9 @@ interface HrApiDepartment {
 }
 
 export class DepartmentSyncService extends BaseSyncService<HrApiDepartment> {
-    protected apiUrl = 'http://192.168.12.211:4100/api/departments';
+    protected get apiUrl(): string {
+        return SystemSettingsCacheService.getRequired('HR_API_DEPARTMENTS_URL');
+    }
     protected model = Department.model;
     protected serviceName = '부서 동기화';
 

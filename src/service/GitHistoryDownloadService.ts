@@ -1,19 +1,25 @@
-import { apiClient } from '../modules/httpClient/ApiClient.js';
+import {apiClient} from '../modules/httpClient/ApiClient.js';
 import {Request, Response, NextFunction} from 'express';
 import {generatorUtils as generator} from '../utils/Utils.js';
 import {basicProperty} from '../properties/ServerProperty.js';
 import {dateUtil} from '../utils/Utils.js';
+import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 
 class GitHistoryDownloadService {
     // 경로, 토큰은 설정 값으로 받아와야 겠음
     private gitlabBaseUrl = 'http://gitlab/gitlab/api/v4/projects/';
     //private gitlabBaseUrl = 'http://unidocu/gitlab/api/v4/projects/';
     private projectId = '';
-    private accessToken = basicProperty.gitLap.pak;
+
+    private get accessToken() {
+        return SystemSettingsCacheService.getRequired('GITLAB_PAK');
+    }
 
     public async getExcelBuffer(req: Request): Promise<Buffer> {
         const {projectId, fromDate, toDate} = req.body;
-        let page = 1, per_page = 100, allCommits: any[] = [];
+        let page = 1,
+            per_page = 100,
+            allCommits: any[] = [];
         this.projectId = await this.getProjectId(projectId);
 
         while (true) {

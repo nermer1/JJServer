@@ -4,7 +4,7 @@ import logger from '../../utils/logger.js';
 import {DBLogger} from '../../utils/DBLogger.js';
 
 export abstract class BaseSyncService<ExternalDataType> {
-    protected abstract apiUrl: string;
+    protected abstract get apiUrl(): string;
     protected abstract model: Model<any>;
     protected abstract serviceName: string;
 

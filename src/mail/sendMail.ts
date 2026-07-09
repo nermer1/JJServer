@@ -3,20 +3,35 @@ import HtmlTemplate from '../ui/template/HtmlTemplate.js';
 import {basicProperty} from '../properties/ServerProperty.js';
 import logger from '../utils/logger.js';
 
-const transporter = nodemailer.createTransport({
-    host: basicProperty.smtp.host,
-    port: basicProperty.smtp.port,
-    secure: false
-    /* auth: {
-        user: basicProperty.smtp.user,
-        pass: basicProperty.smtp.password
-    } */
-});
+import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
+
+let _transporter: nodemailer.Transporter | null = null;
+
+const getTransporter = () => {
+    if (!_transporter) {
+        _transporter = nodemailer.createTransport({
+            host: SystemSettingsCacheService.getRequired('SMTP_HOST'),
+            port: Number(SystemSettingsCacheService.getRequired('SMTP_PORT')),
+            secure: false
+            /* auth: {
+                user: SystemSettingsCacheService.getRequired('SMTP_USER'),
+                pass: SystemSettingsCacheService.getRequired('SMTP_PASS')
+            } */
+        });
+    }
+    return _transporter;
+};
+
+// 설정 변경 시 명시적으로 호출할 리로드 함수
+export const reloadTransporter = () => {
+    _transporter = null;
+    logger.info('[Mail] 메일 발송 Transporter 캐시가 비워졌습니다. (다음 호출 시 재초기화)');
+};
 
 class JJMail {
     static async sendMailWithMustache(sender: string, reciever: string, subject: string, mustacheName: string, data: any) {
         const template = new HtmlTemplate();
-        const info = await transporter.sendMail({
+        const info = await getTransporter().sendMail({
             from: sender,
             to: reciever,
             subject,
@@ -28,7 +43,7 @@ class JJMail {
 
     static async sendMailWithHtml(sender: string, reciever: string, subject: string, html: any) {
         const template = new HtmlTemplate();
-        const info = await transporter.sendMail({
+        const info = await getTransporter().sendMail({
             from: sender,
             to: reciever,
             subject,
