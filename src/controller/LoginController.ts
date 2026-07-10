@@ -6,6 +6,7 @@ import ApiReturn from '../structure/ApiReturn.js';
 import JJMail from '../mail/sendMail.js';
 import jwt from 'jsonwebtoken';
 import logger from '../utils/logger.js';
+import axios from 'axios';
 import PermissionCacheService from '../service/PermissionCacheService.js';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 import {DBLogger} from '../utils/DBLogger.js';
@@ -13,6 +14,63 @@ import {DBLogger} from '../utils/DBLogger.js';
 // 테스트 중
 
 class LoginController {
+    private async issueTokensForUser(email: string, apiReturn: ApiReturn, res: Response, issueRefresh: boolean = true): Promise<boolean> {
+        const secretKey = SystemSettingsCacheService.getRequired('JWT_SECRET');
+
+        const userDoc = await Users.model
+            .findOne({email})
+            .populate({
+                path: 'roles',
+                populate: {
+                    path: 'permissions'
+                }
+            })
+            .lean();
+
+        if (!userDoc) {
+            apiReturn.setReturnErrorMessage('해당 유저를 찾을 수 없습니다.');
+            return false;
+        }
+
+        const permissionsSet = new Set<string>();
+        let maxRoleLevel = 0;
+        if (userDoc.roles && Array.isArray(userDoc.roles)) {
+            userDoc.roles.forEach((role: any) => {
+                if (role.level && role.level > maxRoleLevel) {
+                    maxRoleLevel = role.level;
+                }
+                if (role.permissions && Array.isArray(role.permissions)) {
+                    role.permissions.forEach((perm: any) => {
+                        if (perm.action) permissionsSet.add(perm.action);
+                    });
+                }
+            });
+        }
+        const permissions = Array.from(permissionsSet);
+
+        // Redis 권한/레벨 캐싱 (무중단 갱신)
+        await PermissionCacheService.cacheUserPermissions(userDoc.email, {permissions, level: maxRoleLevel});
+
+        // JWT Payload 최소화 (권한 제외)
+        const payload = {
+            userId: userDoc.email,
+            department_id: userDoc.department_id?.toString() || null,
+            level: maxRoleLevel
+        };
+        const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
+
+        res.cookie('token', token, {httpOnly: true, maxAge: 24 * 60 * 60 * 1000});
+        apiReturn.put('token', token);
+
+        if (issueRefresh) {
+            const refreshToken = jwt.sign({userId: userDoc.email}, secretKey, {expiresIn: '14d'});
+            await redisTest.set(`refresh:${userDoc.email}`, refreshToken, {EX: 14 * 24 * 60 * 60});
+            apiReturn.put('refreshToken', refreshToken);
+        }
+
+        return true;
+    }
+
     public async test(req: Request, res: Response): Promise<void> {
         let {email, authNumber} = req.body;
         // 이메일 검증(생략한다 안한다?) 존재하면 메일로 인증번호 전송?
@@ -42,61 +100,11 @@ class LoginController {
                 apiReturn.setReturnErrorMessage('확실 해요?');
             } else {
                 // 토큰 발행
-                // 시크릿키는 DB(SystemSettings)에서 동적으로 가져옵니다. 기본값은 'test'
-                const secretKey = SystemSettingsCacheService.getRequired('JWT_SECRET');
-
-                // email로 사원 정보 조회?
-
-                const userDoc = await Users.model
-                    .findOne({email})
-                    .populate({
-                        path: 'roles',
-                        populate: {
-                            path: 'permissions'
-                        }
-                    })
-                    .lean();
-
-                if (!userDoc) {
-                    apiReturn.setReturnErrorMessage('해당 유저를 찾을 수 없습니다.');
+                const success = await this.issueTokensForUser(email, apiReturn, res, true);
+                if (!success) {
                     res.json(apiReturn);
                     return;
                 }
-
-                const permissionsSet = new Set<string>();
-                let maxRoleLevel = 0;
-                if (userDoc.roles && Array.isArray(userDoc.roles)) {
-                    userDoc.roles.forEach((role: any) => {
-                        if (role.level && role.level > maxRoleLevel) {
-                            maxRoleLevel = role.level;
-                        }
-                        if (role.permissions && Array.isArray(role.permissions)) {
-                            role.permissions.forEach((perm: any) => {
-                                if (perm.action) permissionsSet.add(perm.action);
-                            });
-                        }
-                    });
-                }
-                const permissions = Array.from(permissionsSet);
-
-                // Redis 권한/레벨 캐싱 (무중단 갱신)
-                await PermissionCacheService.cacheUserPermissions(userDoc.email, {permissions, level: maxRoleLevel});
-
-                // JWT Payload 최소화 (권한 제외)
-                const payload = {
-                    userId: userDoc.email,
-                    department_id: userDoc.department_id?.toString() || null,
-                    level: maxRoleLevel
-                };
-                const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
-
-                // Refresh Token 발급 및 Redis 저장 (14일 수명)
-                const refreshToken = jwt.sign({userId: userDoc.email}, secretKey, {expiresIn: '14d'});
-                await redisTest.set(`refresh:${userDoc.email}`, refreshToken, {EX: 14 * 24 * 60 * 60});
-
-                res.cookie('token', token, {httpOnly: true, maxAge: 24 * 60 * 60 * 1000});
-                apiReturn.put('token', token);
-                apiReturn.put('refreshToken', refreshToken);
                 apiReturn.setReturnMessage('액세스 토큰 및 리프레시 토큰 발행');
                 redisTest.del(authNumber);
             }
@@ -155,55 +163,118 @@ class LoginController {
         }
 
         // 3. 다시 토큰을 굽기 위해 DB에서 유저 권한 한 일 번 더 조회 (Populate 적용)
-        const userDoc = await Users.model
-            .findOne({email: userId})
-            .populate({
-                path: 'roles',
-                populate: {
-                    path: 'permissions'
-                }
-            })
-            .lean();
-
-        if (!userDoc) {
-            apiReturn.setReturnErrorMessage('해당 유저 정보를 찾을 수 없습니다.');
+        const success = await this.issueTokensForUser(userId, apiReturn, res, false);
+        if (!success) {
             res.status(401).json(apiReturn);
             return;
         }
-
-        const permissionsSet = new Set<string>();
-        let maxRoleLevel = 0;
-        if (userDoc.roles && Array.isArray(userDoc.roles)) {
-            userDoc.roles.forEach((role: any) => {
-                if (role.level && role.level > maxRoleLevel) {
-                    maxRoleLevel = role.level;
-                }
-                if (role.permissions && Array.isArray(role.permissions)) {
-                    role.permissions.forEach((perm: any) => {
-                        if (perm.action) permissionsSet.add(perm.action);
-                    });
-                }
-            });
-        }
-        const permissions = Array.from(permissionsSet);
-
-        // Redis 권한/레벨 캐싱 (무중단 갱신)
-        await PermissionCacheService.cacheUserPermissions(userDoc.email, {permissions, level: maxRoleLevel});
-
-        // JWT Payload 최소화 (권한 제외)
-        const payload = {
-            userId: userDoc.email,
-            department_id: userDoc.department_id?.toString() || null,
-            level: maxRoleLevel
-        };
-
-        // 4. 새로운 Access Token만 달랑 구워서 내려줌 (테스트용 1m -> 24h)
-        const token = jwt.sign(payload, secretKey, {expiresIn: '24h'});
-
-        res.cookie('token', token, {httpOnly: true, maxAge: 24 * 60 * 60 * 1000});
-        apiReturn.put('token', token);
         apiReturn.setReturnMessage('액세스 토큰 재발급 성공');
         res.json(apiReturn);
+    }
+
+    /**
+     * 슬랙 로그인 연동 (OAuth 시작점 - OpenID Connect 방식)
+     */
+    public async slackLoginRedirect(req: Request, res: Response): Promise<void> {
+        try {
+            const clientId = SystemSettingsCacheService.getRequired('SLACK_CLIENT_ID');
+            const redirectUri = SystemSettingsCacheService.getRequired('SLACK_REDIRECT_URI');
+
+            // OpenID Connect (OIDC) 전용 스코프 (이메일 및 프로필 조회용)
+            // 주의: 슬랙 대시보드에서 띄어쓰기로 구분되어야 하므로 인코딩 시 주의
+            const scopes = 'openid profile email';
+
+            // OIDC 전용 authorize 엔드포인트 사용
+            const slackAuthUrl = `https://slack.com/openid/connect/authorize?response_type=code&client_id=${clientId}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+            res.redirect(slackAuthUrl);
+        } catch (error: any) {
+            logger.error(`[Slack OAuth] 리다이렉트 생성 실패: ${error.message}`);
+            const apiReturn = new ApiReturn();
+            apiReturn.setReturnErrorMessage('Slack 연동 설정이 되어있지 않습니다.');
+            res.status(500).send(apiReturn);
+        }
+    }
+
+    /**
+     * 슬랙 로그인 콜백 (Slack에서 리다이렉트됨 - OpenID Connect 방식)
+     */
+    public async slackLoginCallback(req: Request, res: Response): Promise<void> {
+        const {code, error: slackError} = req.query;
+
+        if (slackError || !code) {
+            logger.error(`[Slack OAuth] 콜백 인증 에러: ${slackError}`);
+            res.redirect('/?error=slack_login_failed');
+            return;
+        }
+
+        try {
+            const clientId = SystemSettingsCacheService.getRequired('SLACK_CLIENT_ID');
+            const clientSecret = SystemSettingsCacheService.getRequired('SLACK_CLIENT_SECRET');
+            const redirectUri = SystemSettingsCacheService.getRequired('SLACK_REDIRECT_URI');
+
+            // 1. code로 Access Token 교환 (OIDC 전용 토큰 엔드포인트)
+            const tokenResponse = await axios.post('https://slack.com/api/openid.connect.token', null, {
+                params: {
+                    client_id: clientId,
+                    client_secret: clientSecret,
+                    code: code as string,
+                    redirect_uri: redirectUri
+                }
+            });
+
+            if (!tokenResponse.data.ok) {
+                logger.error(`[Slack OAuth] OIDC 토큰 교환 실패: ${tokenResponse.data.error}`);
+                res.redirect('/?error=slack_token_failed');
+                return;
+            }
+
+            const userToken = tokenResponse.data.access_token;
+
+            // 2. Access Token으로 유저 프로필 조회 (OIDC 전용 userInfo 엔드포인트)
+            const profileResponse = await axios.get('https://slack.com/api/openid.connect.userInfo', {
+                headers: {
+                    Authorization: `Bearer ${userToken}`
+                }
+            });
+
+            if (!profileResponse.data.ok) {
+                logger.error(`[Slack OAuth] OIDC 프로필 조회 실패: ${profileResponse.data.error}`);
+                res.redirect('/?error=slack_profile_failed');
+                return;
+            }
+
+            const email = profileResponse.data.email;
+            if (!email) {
+                logger.error(`[Slack OAuth] 이메일 정보가 존재하지 않음.`);
+                res.redirect('/?error=slack_email_missing');
+                return;
+            }
+
+            // 3. 얻어낸 이메일로 기존 로그인 로직 수행
+            const apiReturn = new ApiReturn();
+            const success = await this.issueTokensForUser(email, apiReturn, res, true);
+
+            if (success) {
+                logger.info(`[Slack OAuth] 로그인 성공: ${email}`);
+
+                // 프론트엔드가 토큰을 localStorage에 저장할 수 있도록 URL 파라미터로 전달
+                let frontendUrl = SystemSettingsCacheService.get('FRONTEND_URL', '/');
+                const returnData = apiReturn.getReturnData();
+
+                // URL에 이미 쿼리파라미터가 있는지 여부에 따라 ? 또는 & 사용
+                const separator = frontendUrl.includes('?') ? '&' : '?';
+                frontendUrl += `${separator}token=${returnData.token}&refreshToken=${returnData.refreshToken}`;
+
+                res.redirect(frontendUrl);
+            } else {
+                logger.error(`[Slack OAuth] DB 유저 조회 실패: ${email}`);
+                res.redirect('/?error=unauthorized_user');
+            }
+        } catch (error: any) {
+            logger.error(`[Slack OAuth] 처리 중 서버 에러: ${error.message}`);
+            res.redirect('/?error=internal_server_error');
+        }
     }
 
     /**
@@ -237,8 +308,9 @@ async function storeAuthNumber(mail: string) {
     const ttl = await redisTest.client?.ttl(authNumber);
 
     // 비동기로 메일을 보내되, 에러가 발생해도 서버가 죽지 않도록 catch를 달아줍니다 (비동기 Fire-and-Forget)
-    JJMail.sendMailWithMustache('(주)유니포스트" <test@unidocu.unipost.co.kr>', mail, '[유니헬퍼] 로그인 인증번호 안내', 'otp', {authNumber})
-        .catch(err => logger.error(`[Mail Error] 인증번호 메일 전송 실패: ${err.message}`));
+    JJMail.sendMailWithMustache('(주)유니포스트" <test@unidocu.unipost.co.kr>', mail, '[유니헬퍼] 로그인 인증번호 안내', 'otp', {authNumber}).catch((err) =>
+        logger.error(`[Mail Error] 인증번호 메일 전송 실패: ${err.message}`)
+    );
 
     return {ttl};
 }

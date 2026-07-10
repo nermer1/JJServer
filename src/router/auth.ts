@@ -8,5 +8,7 @@ router.post('/login', LoginController.test.bind(LoginController));
 router.post('/refresh', LoginController.refresh.bind(LoginController));
 router.post('/global-logout', requirePermission('system:admin'), LoginController.globalLogout.bind(LoginController));
 
-export {router};
+router.get('/slack', LoginController.slackLoginRedirect.bind(LoginController));
+router.get('/slack/callback', LoginController.slackLoginCallback.bind(LoginController));
 
+export {router};

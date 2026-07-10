@@ -10,7 +10,7 @@ import redisTest from '../db/RedisTest.js';
 // /auth 라우터로 묶여있어 req.path가 /auth/login 또는 /auth/refresh로 들어옵니다.
 const AUTH_CONFIG = {
     // 인증 검사를 아예 생략하는 라우트 (토큰 파싱 X)
-    exclude: ['/auth/login', '/auth/refresh', '/docs', '/apikeys', '/integrations/slack/commands', '/integrations/slack/interactivity'],
+    exclude: ['/auth/slack', '/auth/login', '/auth/refresh', '/docs', '/apikeys', '/integrations/slack/commands', '/integrations/slack/interactivity'],
     // 선택적 인증 라우트 (토큰이 없어도 통과, 있으면 파싱해서 req.user에 담아줌)
     optional: ['/interviewQuiz', '/interviewQuizSubmit']
 };
