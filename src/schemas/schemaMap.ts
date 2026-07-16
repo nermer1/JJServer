@@ -12,6 +12,8 @@ import {Role} from './role.js';
 import {ApiKeys} from './apiKeys.js';
 import {SystemSettings} from './systemSettings.js';
 import {AuditLog} from './auditLog.js';
+import {Achievements} from './achievements.js';
+import {PointHistories} from './pointHistories.js';
 
 const schemas = {
     holiday: Holiday,
@@ -27,7 +29,9 @@ const schemas = {
     role: Role,
     apiKeys: ApiKeys,
     systemSettings: SystemSettings,
-    auditLog: AuditLog
+    auditLog: AuditLog,
+    achievements: Achievements,
+    pointHistories: PointHistories
 };
 
 export {schemas};

@@ -144,6 +144,11 @@ const userSchemaDefinition = new Schema({
             ref: 'role'
         }
     ],
+    currentPoint: { type: Number, default: 0 },
+    unlockedAchievements: [{
+        achievementId: { type: Schema.Types.ObjectId, ref: 'achievements' },
+        unlockedAt: { type: Date, default: Date.now }
+    }],
     ips: {type: [ipSchema], default: []},
     settings: {type: settingsSchema, default: () => ({})}
 });
