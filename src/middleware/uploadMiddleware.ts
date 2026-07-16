@@ -1,34 +1,30 @@
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
-import { Request } from 'express';
+import {Request} from 'express';
 import crypto from 'crypto';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 import logger from '../utils/logger.js';
 
 // 위험한 확장자 목록 (소문자로 비교)
-const FORBIDDEN_EXTENSIONS = [
-    '.exe', '.sh', '.bat', '.cmd', '.msi', 
-    '.php', '.jsp', '.asp', '.aspx', 
-    '.cgi', '.pl', '.py', '.js', '.vbs'
-];
+const FORBIDDEN_EXTENSIONS = ['.exe', '.sh', '.bat', '.cmd', '.msi', '.php', '.jsp', '.asp', '.aspx', '.cgi', '.pl', '.py', '.js', '.vbs'];
 
 // Multer 스토리지 설정
 const storage = multer.diskStorage({
     destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
         try {
             // 시스템 세팅에서 최상위 업로드 경로 가져오기 (기본값 설정)
-            const basePath = SystemSettingsCacheService.get('FILE_UPLOAD_PATH', 'C:/uploads');
-            
+            const basePath = SystemSettingsCacheService.getRequired('FILE_UPLOAD_PATH');
+
             // URL 파라미터에서 fileGroupId 추출 (안전 장치로 없으면 default 폴더)
             const fileGroupId = req.params.fileGroupId || 'default';
-            
+
             // 최종 저장 경로: /최상위경로/fileGroupId/
             const uploadPath = path.join(basePath, fileGroupId);
-            
+
             // 폴더가 없으면 생성 (재귀적 생성)
             if (!fs.existsSync(uploadPath)) {
-                fs.mkdirSync(uploadPath, { recursive: true });
+                fs.mkdirSync(uploadPath, {recursive: true});
             }
             cb(null, uploadPath);
         } catch (error: any) {
