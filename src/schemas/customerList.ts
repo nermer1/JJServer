@@ -73,23 +73,39 @@ class CustomerSchema extends CommonSchema {
             const inputData = params.data.tableData[0];
             const etcData = inputData.etc;
             const dataId = inputData._id;
+            const inputUpdatedAt = inputData.updatedAt;
             const option = params.option || {}; // 권한 우회 방지용 옵션
 
             etcData._id = dataId;
             etcData.code = inputData.code;
 
             // 미들웨어가 주입한 option 조건 병합
-            const query = {_id: dataId, ...option};
+            const query: any = {_id: dataId, ...option};
+
+            // 동시성 제어 (낙관적 락): 프론트에서 받은 updatedAt이 있으면 쿼리에 추가
+            if (inputUpdatedAt) {
+                query.updatedAt = inputUpdatedAt;
+            }
 
             // _id와 etc 필드를 제거한 뒤 업데이트용 객체 생성
             const updateData = {...inputData};
             delete updateData._id;
             delete updateData.etc;
+            delete updateData.updatedAt; // 자동 갱신되도록 수동 덮어쓰기 방지
 
             // 기존 코드에 있던 취약점 수정: _id 뿐만 아니라 권한 조건(query)도 검사
             const returnData = await this.model.findOneAndUpdate(query, flatten(updateData, {safe: true}), {new: true, session});
 
             if (!returnData) {
+                // updatedAt 조건 때문에 못 찾은 거라면(동시에 다른 사람이 수정함) 409 에러 발생
+                if (inputUpdatedAt) {
+                    const exists = await this.model.exists({ _id: dataId, ...option });
+                    if (exists) {
+                        const error: any = new Error('데이터가 다른 사용자에 의해 이미 수정되었습니다. 최신 데이터를 확인 후 다시 시도해주세요.');
+                        error.status = 409;
+                        throw error;
+                    }
+                }
                 throw new Error('업데이트할 데이터를 찾을 수 없거나 접근 권한이 없습니다.');
             }
 
@@ -110,6 +126,10 @@ class CustomerSchema extends CommonSchema {
             console.error(error);
             apiReturn.setReturnMessage('업데이트 실패');
             apiReturn.setReturnErrorMessage(error.message);
+            // 에러 객체에 409 코드가 있으면 apiReturn 내부에도 마킹하여 컨트롤러가 알 수 있게 함
+            if (error.status === 409) {
+                (apiReturn as any).statusCode = 409;
+            }
         } finally {
             session.endSession();
         }
@@ -215,7 +235,7 @@ class CustomerSchema extends CommonSchema {
  * type: 타입1 운영유지보수, 타입2 하자유지보수, 타입3 계약기간동안 운영유지보수
  */
 
-const CustomerList = new CustomerSchema('customer', {
+const customerSchemaDef = new Schema({
     department_ids: [
         {
             type: Schema.Types.ObjectId,
@@ -239,6 +259,8 @@ const CustomerList = new CustomerSchema('customer', {
     ssh: {
         type: String
     }
-});
+}, { timestamps: true });
+
+const CustomerList = new CustomerSchema('customer', customerSchemaDef);
 
 export {CustomerList};

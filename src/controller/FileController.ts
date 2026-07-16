@@ -80,7 +80,9 @@ class FileController {
 
         try {
             // 휴지통(DELETED)에 들어간 파일은 제외하고 목록을 넘겨줍니다.
-            const files = await Files.find({fileGroupId, status: { $ne: 'DELETED' }}).sort({uploadDate: -1}).lean();
+            const files = await Files.find({fileGroupId, status: {$ne: 'DELETED'}})
+                .sort({uploadDate: -1})
+                .lean();
 
             apiReturn.setReturnMessage('파일 목록 조회 성공');
             apiReturn.put('files', files);
@@ -100,7 +102,10 @@ class FileController {
         const {fileGroupId} = req.params;
 
         try {
-            await Files.updateMany({fileGroupId}, {$set: {status: 'SAVED'}});
+            await Files.updateMany(
+                {fileGroupId, status: { $ne: 'DELETED' }},
+                {$set: {status: 'SAVED'}}
+            );
 
             apiReturn.setReturnMessage('파일들이 성공적으로 저장 확정되었습니다.');
             res.json(apiReturn);
@@ -124,7 +129,7 @@ class FileController {
                 return;
             }
 
-            const basePath = SystemSettingsCacheService.get('FILE_UPLOAD_PATH', 'C:/uploads');
+            const basePath = SystemSettingsCacheService.getRequired('FILE_UPLOAD_PATH');
             const filePath = path.join(basePath, fileRecord.fileGroupId, fileRecord.savedName);
 
             if (!fs.existsSync(filePath)) {
@@ -133,21 +138,27 @@ class FileController {
                 return;
             }
 
-            // DB에 다운로드 로그 기록
-            await DBLogger.log({
-                category: 'FILE',
-                action: '파일 다운로드',
-                target: 'files',
-                actionType: 'READ',
-                userId: (req as any).user?.userId || 'UNKNOWN',
-                details: {
-                    fileId: fileRecord._id,
-                    fileGroupId: fileRecord.fileGroupId,
-                    originalName: fileRecord.originalName,
-                    size: fileRecord.size
-                },
-                status: 'SUCCESS'
-            });
+            // 에디터 이미지 로드 등 불필요한 다운로드 로그 방지 (헤더 또는 쿼리 파라미터 확인)
+            const isImageLoad = req.headers['sec-fetch-dest'] === 'image';
+            const isSkipLog = req.query.skipLog === 'true';
+
+            if (!isImageLoad && !isSkipLog) {
+                // DB에 다운로드 로그 기록
+                await DBLogger.log({
+                    category: 'FILE',
+                    action: '파일 다운로드',
+                    target: 'files',
+                    actionType: 'READ',
+                    userId: (req as any).user?.userId || 'UNKNOWN',
+                    details: {
+                        fileId: fileRecord._id,
+                        fileGroupId: fileRecord.fileGroupId,
+                        originalName: fileRecord.originalName,
+                        size: fileRecord.size
+                    },
+                    status: 'SUCCESS'
+                });
+            }
 
             // 다운로드 시 원래 이름(originalName)으로 저장되게 헤더 강제 세팅 (한글 깨짐 방지 위해 encodeURIComponent 사용)
             const encodedName = encodeURIComponent(fileRecord.originalName).replace(/'/g, '%27');
@@ -173,8 +184,8 @@ class FileController {
         try {
             const fileRecord = await Files.findByIdAndUpdate(
                 fileId,
-                { $set: { status: 'DELETED' } },
-                { new: true } // 업데이트된 문서를 반환받아 로깅에 사용
+                {$set: {status: 'DELETED'}},
+                {new: true} // 업데이트된 문서를 반환받아 로깅에 사용
             );
 
             if (!fileRecord) {
@@ -219,8 +230,8 @@ class FileController {
         // 2. 상태가 'DELETED' 이고, 삭제된 지(updatedAt) hoursOld 시간이 지난 휴지통 파일
         const targetFiles = await Files.find({
             $or: [
-                { status: 'TEMP', uploadDate: { $lt: cutoffDate } },
-                { status: 'DELETED', updatedAt: { $lt: cutoffDate } }
+                {status: 'TEMP', uploadDate: {$lt: cutoffDate}},
+                {status: 'DELETED', updatedAt: {$lt: cutoffDate}}
             ]
         });
 
@@ -228,7 +239,7 @@ class FileController {
             return {deletedCount: 0, hoursOld, deletedFiles: []};
         }
 
-        const basePath = SystemSettingsCacheService.get('FILE_UPLOAD_PATH', 'C:/uploads');
+        const basePath = SystemSettingsCacheService.getRequired('FILE_UPLOAD_PATH');
         let deletedCount = 0;
         const deletedFilesList: any[] = [];
 
@@ -282,4 +293,3 @@ class FileController {
 }
 
 export default new FileController();
-
