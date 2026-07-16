@@ -40,9 +40,9 @@ export class DepartmentSyncService extends BaseSyncService<HrApiDepartment> {
     /**
      * 동기화가 완료된 후 2차로 parent_code를 기반으로 parent_id(ObjectId)를 업데이트합니다.
      */
-    public async sync(params?: Record<string, any>): Promise<void> {
+    public async sync(params?: Record<string, any>): Promise<any> {
         // 1. BaseSyncService의 기본 동기화 실행 (모든 부서 Upsert 및 parent_code 세팅 완료)
-        await super.sync(params);
+        const baseResult = await super.sync(params);
 
         // 2. 부모 자식 계층(ObjectId) 2차 매핑
         const allDepts = await this.model.find({}).lean();
@@ -66,9 +66,16 @@ export class DepartmentSyncService extends BaseSyncService<HrApiDepartment> {
             }
         }
 
+        let parentMappingCount = 0;
         if (parentIdBulkOps.length > 0) {
             const result = await this.model.bulkWrite(parentIdBulkOps);
-            console.log(`[부서 동기화] 부모-자식(parent_id) 계층 매핑 완료: ${result.modifiedCount}건 수정됨`);
+            parentMappingCount = result.modifiedCount;
+            console.log(`[부서 동기화] 부모-자식(parent_id) 계층 매핑 완료: ${parentMappingCount}건 수정됨`);
         }
+
+        return {
+            ...baseResult,
+            parentMappingCount
+        };
     }
 }

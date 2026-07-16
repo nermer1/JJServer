@@ -18,6 +18,7 @@ import {router as push} from './push.js';
 import {router as user} from './user.js';
 import {router as permission} from './permission.js';
 import {router as system} from './system.js';
+import {router as files} from './files.js';
 
 const router = express.Router();
 
@@ -38,6 +39,7 @@ import ApiKeyController from '../controller/ApiKeyController.js';
 router.use('/user', user);
 router.use('/permission', permission);
 router.use('/system', system);
+router.use('/files', files);
 
 // 핵심 도메인 전용 요청 가로채기 (정규식 매칭)
 router.post('/:collection(users)', userCrudPermission, UserController.call.bind(UserController));

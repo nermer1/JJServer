@@ -1,7 +1,6 @@
 import {Model} from 'mongoose';
 import {apiClient} from '../../modules/httpClient/ApiClient.js';
 import logger from '../../utils/logger.js';
-import {DBLogger} from '../../utils/DBLogger.js';
 
 export abstract class BaseSyncService<ExternalDataType> {
     protected abstract get apiUrl(): string;
@@ -43,7 +42,7 @@ export abstract class BaseSyncService<ExternalDataType> {
     /**
      * 동기화 배치 메인 로직 (템플릿 메서드)
      */
-    public async sync(params?: Record<string, any>): Promise<void> {
+    public async sync(params?: Record<string, any>): Promise<any> {
         try {
             logger.info(`[${this.serviceName}] 동기화 시작...`);
 
@@ -58,42 +57,24 @@ export abstract class BaseSyncService<ExternalDataType> {
             const bulkOps = await this.buildBulkOps(data);
             if (bulkOps.length === 0) {
                 logger.info(`[${this.serviceName}] 처리할 Bulk 연산이 없습니다.`);
-                return;
+                return { message: 'No bulk ops to process' };
             }
 
             // 3. DB 일괄 저장 (BulkWrite)
             const result = await this.model.bulkWrite(bulkOps as any);
 
             const trigger = params?.trigger || 'manual';
-            const userId = params?.userId || 'SYSTEM';
 
-            await DBLogger.log({
-                category: 'SYNC',
-                action: `${this.serviceName} 동기화 완료 (${trigger})`,
-                userId,
-                details: {
-                    trigger,
-                    upsertedCount: result.upsertedCount,
-                    modifiedCount: result.modifiedCount,
-                    deletedCount: result.deletedCount,
-                    ...params
-                },
-                status: 'SUCCESS'
-            });
+            // 매니저(TaskScheduleManager)가 로깅할 수 있도록 데이터만 리턴
+            return {
+                trigger,
+                upsertedCount: result.upsertedCount,
+                modifiedCount: result.modifiedCount,
+                deletedCount: result.deletedCount,
+                ...params
+            };
         } catch (error: any) {
-            const trigger = params?.trigger || 'manual';
-            const userId = params?.userId || 'SYSTEM';
-
-            // 실패 기록을 DB에 남김 (status: 'FAIL')
-            await DBLogger.log({
-                category: 'SYNC',
-                action: `${this.serviceName} 동기화 실패 (${trigger})`,
-                userId,
-                details: {trigger, error: error?.message || String(error), ...params},
-                status: 'FAIL'
-            });
-
-            // ⚠️ 여기서 에러를 다시 던져서(Throw), 호출한 쪽(라우터나 스케줄러)이 실패 사실을 알게 해야 합니다.
+            // ⚠️ 에러를 던져서(Throw) 호출한 쪽(매니저)이 에러 로그를 남기게 함
             throw error;
         }
     }

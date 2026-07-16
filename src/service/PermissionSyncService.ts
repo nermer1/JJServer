@@ -1,8 +1,7 @@
 import {Permission} from '../schemas/permission.js';
 import {Role} from '../schemas/role.js';
 import PermissionCacheService from './PermissionCacheService.js';
-
-import {DBLogger} from '../utils/DBLogger.js';
+import {withJobLogging} from '../utils/JobLogger.js';
 
 class PermissionSyncService {
     /**
@@ -39,37 +38,29 @@ class PermissionSyncService {
                 await PermissionCacheService.clearCacheByRoleId(role._id.toString());
             }
 
-            // [로깅 철학]
-            // 스케줄러가 주기적으로 도는데 매번 0건이어도 DB에 로그를 찍으면 '로그 스팸(Noise)'이 됩니다.
-            // 따라서 1) 수동 트리거(manual)로 사람이 직접 눌렀거나, 2) 실제로 업데이트된 내역이 있을 때만 DB에 기록합니다.
-            if (missingIds.length > 0 || trigger === 'manual') {
-                await DBLogger.log({
-                    category: 'SYNC',
-                    action: `권한 동기화 실행 (${targetRoleName})`,
-                    userId,
-                    details: {trigger, addedCount: missingIds.length},
-                    status: 'SUCCESS'
-                });
-            }
-
+            // 현재는 스케줄러가 정상적으로 구동되었는지(생존 체크) 확인하기 위해 무조건 로그를 남깁니다.
             return {
                 success: true,
                 message: missingIds.length > 0 ? '권한 동기화 완료' : '권한이 이미 최신 상태입니다.',
                 updatedCount: missingIds.length
             };
         } catch (error: any) {
-            await DBLogger.log({
-                category: 'SYNC',
-                action: '권한 동기화 실패',
-                userId,
-                details: {trigger, error: error?.message || String(error)},
-                status: 'FAIL'
-            });
-
-            return {success: false, message: '권한 동기화 중 에러가 발생했습니다.', updatedCount: 0, error};
+            // 에러를 던져서 매니저가 에러 로그를 남기게 함
+            throw error;
         }
     }
 }
 
-export default new PermissionSyncService();
+const instance = new PermissionSyncService();
+export default instance;
+
+export const syncAdminPermissionsJob = withJobLogging(
+    instance.syncAdminPermissions.bind(instance),
+    {
+        category: 'SYNC',
+        action: '권한 동기화 (SYSTEM_ADMIN)',
+        target: 'permissions',
+        actionType: 'EXECUTE'
+    }
+);
 

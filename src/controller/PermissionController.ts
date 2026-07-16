@@ -1,5 +1,5 @@
 import {Request, Response} from 'express';
-import PermissionSyncService from '../service/PermissionSyncService.js';
+import PermissionSyncService, {syncAdminPermissionsJob} from '../service/PermissionSyncService.js';
 import prdApiService from '../service/PrdApiService.js';
 import {DBLogger} from '../utils/DBLogger.js';
 import logger from '../utils/logger.js';
@@ -87,17 +87,23 @@ class PermissionController {
         const userId = (req as any).user?.userId || 'SYSTEM';
         const apiReturn = new ApiReturn();
 
-        // 보안상 클라이언트가 던지는 Role을 무시하고, 백엔드에서 정적으로 하드코딩된 시스템 관리자에게만 동기화
-        const result = await PermissionSyncService.syncAdminPermissions({trigger: 'manual', userId});
+        try {
+            // 보안상 클라이언트가 던지는 Role을 무시하고, 백엔드에서 정적으로 하드코딩된 시스템 관리자에게만 동기화
+            // 래핑된 Job을 호출하여 수동 실행 시에도 DB 로그가 자동 기록되게 함
+            const result = await syncAdminPermissionsJob({trigger: 'manual', userId});
 
-        if (result.success) {
-            apiReturn.setReturnMessage(result.message);
-            apiReturn.put('data', result);
-        } else {
-            apiReturn.setReturnMessage(result.message);
+            if (result.success) {
+                apiReturn.setReturnMessage(result.message);
+                apiReturn.put('data', result);
+            } else {
+                apiReturn.setReturnMessage(result.message);
+            }
+
+            res.json(apiReturn);
+        } catch (error: any) {
+            apiReturn.setReturnErrorMessage('권한 동기화 중 에러가 발생했습니다.');
+            res.status(500).json(apiReturn);
         }
-
-        res.json(apiReturn);
     }
 
     /**

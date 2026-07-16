@@ -163,11 +163,17 @@ class UserController {
         const {syncHrDataJob} = await import('../scheduler/hrSyncScheduler.js');
         const userId = (req as any).user?.userId || 'SYSTEM';
 
-        // 스케줄러 잡 즉시 실행 (수동 트리거임을 파라미터로 명시)
-        await syncHrDataJob({trigger: 'manual', userId});
+        try {
+            // 스케줄러 잡 즉시 실행 (수동 트리거임을 파라미터로 명시)
+            // 래핑된 Job이 내부적으로 로깅 처리를 알아서 다 해줍니다.
+            await syncHrDataJob({trigger: 'manual', userId});
 
-        apiReturn.setReturnMessage('인사 정보 수동 동기화가 정상적으로 트리거되었습니다. (결과는 로그 참조)');
-        res.json(apiReturn);
+            apiReturn.setReturnMessage('인사 정보 수동 동기화가 정상적으로 처리되었습니다.');
+            res.json(apiReturn);
+        } catch (error: any) {
+            apiReturn.setReturnErrorMessage('인사 정보 동기화 중 에러가 발생했습니다.');
+            res.status(500).json(apiReturn);
+        }
     }
 }
 

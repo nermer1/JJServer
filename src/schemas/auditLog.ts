@@ -73,7 +73,7 @@ const auditLogSchemaDefinition = new Schema(
         category: {
             type: String,
             required: true,
-            enum: ['SLACK', 'SYNC', 'USER', 'SYSTEM', 'OTHER', 'DATA'],
+            enum: ['SLACK', 'SYNC', 'USER', 'SYSTEM', 'OTHER', 'DATA', 'FILE'],
             description: '로그 대분류'
         },
         action: {
