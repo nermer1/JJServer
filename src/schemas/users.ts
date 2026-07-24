@@ -144,7 +144,9 @@ const userSchemaDefinition = new Schema({
             ref: 'role'
         }
     ],
-    currentPoint: { type: Number, default: 0 },
+    level: { type: Number, default: 1 }, // 유저의 현재 레벨
+    totalExp: { type: Number, default: 0 }, // 소비 불가능한 누적 경험치
+    currentPoint: { type: Number, default: 0 }, // 소비 가능한 재화 (포인트)
     unlockedAchievements: [{
         achievementId: { type: Schema.Types.ObjectId, ref: 'achievements' },
         unlockedAt: { type: Date, default: Date.now }

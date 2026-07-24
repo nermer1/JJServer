@@ -3,6 +3,7 @@ export const EVENT_TYPES = {
     API_KEY_CREATED: 'API_KEY_CREATED',
     OTP_USED: 'OTP_USED',
     ACHIEVEMENT_UNLOCKED: 'ACHIEVEMENT_UNLOCKED',
+    LEVEL_UP: 'LEVEL_UP'
 } as const;
 
 export type EventType = typeof EVENT_TYPES[keyof typeof EVENT_TYPES];
@@ -11,10 +12,15 @@ export type EventType = typeof EVENT_TYPES[keyof typeof EVENT_TYPES];
 export interface EventPayloads {
     [EVENT_TYPES.USER_REGISTERED]: { userId: string };
     [EVENT_TYPES.API_KEY_CREATED]: { userId: string; apiKeyId: string };
-    [EVENT_TYPES.OTP_USED]: { userId: string };
+    [EVENT_TYPES.OTP_USED]: { userId: string; otpId?: string };
     [EVENT_TYPES.ACHIEVEMENT_UNLOCKED]: { 
         userId: string; 
         achievementCode: string; 
         rewardPoint: number 
+    };
+    [EVENT_TYPES.LEVEL_UP]: {
+        userId: string;
+        oldLevel: number;
+        newLevel: number;
     };
 }

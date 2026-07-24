@@ -14,6 +14,7 @@ import {SystemSettings} from './systemSettings.js';
 import {AuditLog} from './auditLog.js';
 import {Achievements} from './achievements.js';
 import {PointHistories} from './pointHistories.js';
+import {LevelPolicies} from './levelPolicies.js';
 
 const schemas = {
     holiday: Holiday,
@@ -31,7 +32,8 @@ const schemas = {
     systemSettings: SystemSettings,
     auditLog: AuditLog,
     achievements: Achievements,
-    pointHistories: PointHistories
+    pointHistories: PointHistories,
+    levelPolicies: LevelPolicies
 };
 
 export {schemas};

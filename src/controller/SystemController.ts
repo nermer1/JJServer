@@ -4,6 +4,7 @@ import logger from '../utils/logger.js';
 import ApiReturn from '../structure/ApiReturn.js';
 import prdApiService from '../service/PrdApiService.js';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
+import LevelCacheService from '../service/LevelCacheService.js';
 import {DBLogger} from '../utils/DBLogger.js';
 import {reloadTransporter} from '../mail/sendMail.js';
 import slackService from '../service/SlackService.js';
@@ -58,6 +59,7 @@ class SystemController {
 
                 // 마법 제거: 직접 명시적으로 캐시 갱신
                 await SystemSettingsCacheService.loadSettings();
+                await LevelCacheService.loadCache();
 
                 // 모듈 명시적 리로드 (Slack, Mail 등)
                 // TODO: 특정 키만 리로드하게 최적화할 수도 있으나, 일단 전체 리로드 수행

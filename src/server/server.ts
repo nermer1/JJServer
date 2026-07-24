@@ -8,6 +8,7 @@ import scheduleManager from '../scheduler/index.js';
 //import db from '../db.js';
 import {initSocket} from './socket.js';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
+import LevelCacheService from '../service/LevelCacheService.js';
 
 class Server {
     constructor() {}
@@ -39,7 +40,10 @@ httpServer.listen(port, () => {
     
     // 서버 구동 시 DB에서 시스템 설정(JWT 시크릿 등)을 메모리로 캐싱
     SystemSettingsCacheService.loadSettings().catch((err) => {
-        console.error('SystemSettings 초기 로드 실패:', err);
+        console.error(`[SystemSettings] Failed to initialize cache: ${err.message}`);
+    });
+    LevelCacheService.loadCache().catch((err) => {
+        console.error(`[LevelCache] Failed to initialize cache: ${err.message}`);
     });
 });
 
