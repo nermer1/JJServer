@@ -6,6 +6,7 @@ import prdApiService from '../service/PrdApiService.js';
 import PermissionCacheService from '../service/PermissionCacheService.js';
 import {DBLogger} from '../utils/DBLogger.js';
 import logger from '../utils/logger.js';
+import HypervSocketService from '../service/HypervSocketService.js';
 
 class UserController {
     /**
@@ -54,6 +55,9 @@ class UserController {
                     await PermissionCacheService.clearUserCache(targetEmail);
                     logger.info(`[UserController] ${targetEmail} 유저의 권한 캐시 리로드 완료`);
                 }
+
+                // HypervSocketService의 유저/호스트 메모리 캐시 명시적 삭제 (실시간 반영)
+                HypervSocketService.clearHostDataCache();
             }
 
             res.json(returnData);

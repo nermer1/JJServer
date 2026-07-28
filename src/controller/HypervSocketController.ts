@@ -4,13 +4,13 @@ import logger from '../utils/logger.js';
 
 class HypervSocketController {
     public async heartbeat(req: Request, res: Response): Promise<void> {
-        const {hostname, activeVMs} = req.body;
+        const {hostname, activeVMs, activePhones} = req.body;
         if (!hostname) {
             res.status(400).json({ok: false, message: 'hostname required'});
             return;
         }
 
-        await HypervSocketService.handleHeartbeat(hostname, activeVMs);
+        await HypervSocketService.handleHeartbeat(hostname, activeVMs, activePhones);
         res.json({ok: true});
     }
 
@@ -22,6 +22,17 @@ class HypervSocketController {
         }
 
         const result = await HypervSocketService.requestVm(vmName, requesterName, requesterHostname);
+        res.json(result);
+    }
+
+    public async requestOtp(req: Request, res: Response): Promise<void> {
+        const {phoneName, requesterName, requesterHostname} = req.body;
+        if (!phoneName || !requesterName) {
+            res.status(400).json({ok: false});
+            return;
+        }
+
+        const result = await HypervSocketService.requestOtp(phoneName, requesterName, requesterHostname);
         res.json(result);
     }
 

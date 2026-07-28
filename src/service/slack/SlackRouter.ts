@@ -7,6 +7,7 @@ import {NbbangHandler} from './handlers/NbbangHandler.js';
 import {WikiHandler} from './handlers/WikiHandler.js';
 import {HelpBlocks} from './blocks/HelpBlocks.js';
 import {RemoteRequestHandler} from './handlers/RemoteRequestHandler.js';
+import {OtpSocketRequestHandler} from './handlers/OtpSocketRequestHandler.js';
 import {SlackMessenger} from '../../messenger/slack/SlackMessenger.js';
 
 export class SlackRouter {
@@ -70,6 +71,12 @@ export class SlackRouter {
                     break;
                 case 'remote_request_deny':
                     await RemoteRequestHandler.handleDenyAction(payload, value, response_url, this.slackClient);
+                    break;
+                case 'otp_request_approve':
+                    await OtpSocketRequestHandler.handleApproveAction(payload, value, response_url, this.slackClient);
+                    break;
+                case 'otp_request_deny':
+                    await OtpSocketRequestHandler.handleDenyAction(payload, value, response_url, this.slackClient);
                     break;
                 default:
                     break;

@@ -1,5 +1,6 @@
 import express from 'express';
 import otpController from '../controller/OtpController.js';
+import HypervSocketController from '../controller/HypervSocketController.js';
 import {requirePermission} from '../middleware/permissionMiddleware.js';
 
 const router = express.Router();
@@ -11,5 +12,6 @@ const router = express.Router();
  */
 
 router.post('/google', requirePermission('utility:otp:use:any'), otpController.getList.bind(otpController));
+router.post('/request', requirePermission('utility:otp:use:any'), HypervSocketController.requestOtp.bind(HypervSocketController));
 
 export {router};

@@ -15,8 +15,15 @@ export function initHypervSocket(io: Server): void {
         });
 
         logger.info(`[socket] connected: ${socket.id}`);
-        const initialStatus = await HypervSocketService.computeVmStatus();
-        socket.emit('vm-status-update', initialStatus);
+        try {
+            const initialStatus = await HypervSocketService.computeVmStatus();
+            socket.emit('vm-status-update', initialStatus);
+
+            const initialOtpStatus = await HypervSocketService.computeOtpStatus();
+            socket.emit('otp-status-update', initialOtpStatus);
+        } catch (err) {
+            logger.error(`[socket] initial emit error: ${err}`);
+        }
 
         socket.on('disconnect', () => {
             logger.info(`[socket] disconnected: ${socket.id}`);

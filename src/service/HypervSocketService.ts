@@ -9,6 +9,7 @@ import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js
 import {SlackMessenger} from '../messenger/slack/SlackMessenger.js';
 import {basicProperty} from '../properties/ServerProperty.js';
 import {RemoteRequestBlocks} from './slack/blocks/RemoteRequestBlocks.js';
+import {OtpRequestBlocks} from './slack/blocks/OtpRequestBlocks.js';
 
 const execAsync = promisify(exec);
 
@@ -28,6 +29,12 @@ class HypervSocketService {
         logger.info('[HyperV] 슬랙 봇 클라이언트 캐시가 비워졌습니다. (다음 호출 시 재초기화)');
     }
 
+    public clearHostDataCache() {
+        this.hostData = {};
+        this.userMap.clear();
+        logger.info('[HyperV] 유저/호스트 데이터 메모리 캐시가 비워졌습니다.');
+    }
+
     private userMap = new Map<string, string>();
     private isDirty = false;
     private io: Server | null = null;
@@ -45,6 +52,9 @@ class HypervSocketService {
             try {
                 const status = await this.computeVmStatus();
                 this.io.emit('vm-status-update', status);
+
+                const otpStatus = await this.computeOtpStatus();
+                this.io.emit('otp-status-update', otpStatus);
             } catch (error) {
                 logger.error(`Status broadcast error: ${error}`);
             }
@@ -94,7 +104,8 @@ class HypervSocketService {
 
         const vmUsageMap = new Map<string, {hostname: string; userName: string}>();
         for (const data of agentDataList) {
-            for (const vmName of data.activeVMs) {
+            const activeVMs = data.activeVMs || [];
+            for (const vmName of activeVMs) {
                 vmUsageMap.set(vmName, {hostname: data.hostname, userName: await this.getHostnameToUserName(data.hostname)});
             }
         }
@@ -107,11 +118,39 @@ class HypervSocketService {
         }));
     }
 
-    public async handleHeartbeat(hostname: string, activeVMs: string[]) {
+    public async computeOtpStatus() {
+        const keys = await redisTest.keys('agent:*');
+        const agentDataList = [];
+
+        for (const key of keys) {
+            const dataStr = await redisTest.get(key);
+            if (dataStr) {
+                agentDataList.push({hostname: key.replace('agent:', ''), ...JSON.parse(dataStr)});
+            }
+        }
+
+        const otpUsageMap = new Map<string, {hostname: string; userName: string}>();
+        for (const data of agentDataList) {
+            const activePhones = data.activePhones || [];
+            for (const phoneName of activePhones) {
+                otpUsageMap.set(phoneName, {hostname: data.hostname, userName: await this.getHostnameToUserName(data.hostname)});
+            }
+        }
+
+        return Array.from(otpUsageMap.entries()).map(([phoneName, usage]) => ({
+            phoneName,
+            isConnected: !!usage,
+            hostname: usage.hostname,
+            userName: usage.userName
+        }));
+    }
+
+    public async handleHeartbeat(hostname: string, activeVMs: string[], activePhones: string[] = []) {
         const resolvedName = this.userMap.get(hostname) ?? hostname;
         const data = {
             userName: resolvedName,
-            activeVMs: Array.isArray(activeVMs) ? activeVMs : []
+            activeVMs: Array.isArray(activeVMs) ? activeVMs : [],
+            activePhones: Array.isArray(activePhones) ? activePhones : []
         };
 
         await redisTest.set(`agent:${hostname}`, JSON.stringify(data), {EX: 10});
@@ -171,6 +210,45 @@ class HypervSocketService {
             }
         } catch (error) {
             logger.error(`[Slack Notify Error] Failed to send remote request message: ${error}`);
+        }
+
+        return {ok: true};
+    }
+
+    public async requestOtp(phoneName: string, requesterName: string, requesterHostname?: string) {
+        const otpStatus = await this.computeOtpStatus();
+        const phone = otpStatus.find((v) => v.phoneName === phoneName);
+
+        if (!phone?.hostname) {
+            return {ok: false, message: '현재 사용 중인 사람이 없습니다.'};
+        }
+
+        if (this.io) {
+            logger.info(`[otp-use-request] ${phoneName}, ${requesterName}, ${requesterHostname}`);
+        }
+
+        // Slack Notification
+        try {
+            const targetUser = await schemas.users.model.findOne({hostname: phone.hostname}).select('slackId').lean();
+            if (targetUser && targetUser.slackId) {
+                const requestInfo = {
+                    requester: requesterName,
+                    targetHostname: phone.hostname, // 폰이 떠 있는 호스트
+                    requesterHostname: requesterHostname, // 접속을 요청한 사람의 호스트
+                    phoneName: phoneName,
+                    reason: `${phoneName} 사용 점유 요청`
+                };
+                const blocks = OtpRequestBlocks.buildRequestBlocks(requestInfo);
+                await this.slackClient.sendCardMessage({
+                    channelId: targetUser.slackId,
+                    message: blocks
+                });
+                logger.info(`[slack-message-sent] Slack message sent to ${phone.hostname} (Slack ID: ${targetUser.slackId})`);
+            } else {
+                logger.warn(`[slack-message-failed] Cannot find slackId for hostname: ${phone.hostname}`);
+            }
+        } catch (error) {
+            logger.error(`[Slack Notify Error] Failed to send otp request message: ${error}`);
         }
 
         return {ok: true};
