@@ -2,23 +2,24 @@ import express from 'express';
 
 import PrdApiController from '../controller/PrdApiController.js';
 import {genericCrudPermission} from '../middleware/genericCrudPermission.js';
-import {
-    userCrudPermission,
-    roleCrudPermission,
-    permissionCrudPermission,
-    apiKeyCrudPermission
-} from '../middleware/domainPermissions.js';
+import {userCrudPermission, roleCrudPermission, permissionCrudPermission, apiKeyCrudPermission} from '../middleware/domainPermissions.js';
 import {router as licenses} from './licenses.js';
 import {router as hyperv} from './hyperv.js';
 import {router as downloads} from './downloads.js';
-import {router as otp} from './otp.js';
+
 import {router as integrations} from './integrations.js';
 import {router as auth} from './auth.js';
 import {router as push} from './push.js';
-import {router as user} from './user.js';
+
 import {router as permission} from './permission.js';
 import {router as system} from './system.js';
 import {router as files} from './files.js';
+import {RegisterRoutes} from '../routes/routes.js';
+
+import UserController from '../controller/UserController.js';
+import RoleController from '../controller/RoleController.js';
+import PermissionController from '../controller/PermissionController.js';
+import ApiKeyController from '../controller/ApiKeyController.js';
 
 const router = express.Router();
 
@@ -27,16 +28,11 @@ const router = express.Router();
 router.use('/hyperv', hyperv);
 router.use('/licenses', licenses);
 router.use('/downloads', downloads);
-router.use('/otp', otp);
+
 router.use('/integrations', integrations);
 router.use('/auth', auth);
 //router.use('/push', push);
-import UserController from '../controller/UserController.js';
-import RoleController from '../controller/RoleController.js';
-import PermissionController from '../controller/PermissionController.js';
-import ApiKeyController from '../controller/ApiKeyController.js';
 
-router.use('/user', user);
 router.use('/permission', permission);
 router.use('/system', system);
 router.use('/files', files);
@@ -48,6 +44,9 @@ router.post('/:collection(permission)', permissionCrudPermission, PermissionCont
 router.post('/:collection(apiKeys)', apiKeyCrudPermission, ApiKeyController.call.bind(ApiKeyController));
 
 router.post('/:collection', genericCrudPermission, PrdApiController.call.bind(PrdApiController));
+
+// tsoa 기반 자동 생성 라우트 등록
+RegisterRoutes(router);
 
 export default router;
 

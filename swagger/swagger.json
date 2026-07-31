@@ -1,0 +1,169 @@
+{
+	"openapi": "3.0.0",
+	"components": {
+		"examples": {},
+		"headers": {},
+		"parameters": {},
+		"requestBodies": {},
+		"responses": {},
+		"schemas": {
+			"OtpGoogleRequest": {
+				"properties": {
+					"customer": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					}
+				},
+				"type": "object",
+				"additionalProperties": false
+			},
+			"OtpRequestDto": {
+				"properties": {
+					"phoneName": {
+						"type": "string"
+					},
+					"requesterName": {
+						"type": "string"
+					},
+					"requesterHostname": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"phoneName",
+					"requesterName"
+				],
+				"type": "object",
+				"additionalProperties": false
+			}
+		},
+		"securitySchemes": {
+			"jwt": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "JWT"
+			},
+			"api_key": {
+				"type": "apiKey",
+				"name": "x-api-key",
+				"in": "header"
+			}
+		}
+	},
+	"info": {
+		"title": "jjserver",
+		"version": "1.0.0",
+		"description": "* install\r ```text\r npm install --save-dev eslint\r ```",
+		"license": {
+			"name": "ISC"
+		},
+		"contact": {}
+	},
+	"paths": {
+		"/user/me": {
+			"get": {
+				"operationId": "GetMe",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"description": "내 정보, 권한, 동적 메뉴를 조회합니다.",
+				"tags": [
+					"User"
+				],
+				"security": [
+					{
+						"jwt": []
+					},
+					{
+						"api_key": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/user/contacts": {
+			"get": {
+				"operationId": "GetContacts",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"description": "사내 주소록(연락처) 전용 조회 API\r\n모든 유저의 이름, 이메일, 내선번호, 부서 정보 등 안전한 정보만 리턴합니다.",
+				"tags": [
+					"User"
+				],
+				"security": [
+					{
+						"jwt": []
+					},
+					{
+						"api_key": []
+					}
+				],
+				"parameters": []
+			}
+		},
+		"/otp/google": {
+			"post": {
+				"operationId": "GetList",
+				"responses": {
+					"200": {
+						"description": "Ok",
+						"content": {
+							"application/json": {
+								"schema": {}
+							}
+						}
+					}
+				},
+				"description": "구글 OTP 등 OTP 리스트를 조회합니다.",
+				"tags": [
+					"OTP"
+				],
+				"security": [
+					{
+						"jwt": [
+							"utility:otp:use:any"
+						]
+					},
+					{
+						"api_key": [
+							"utility:otp:use:any"
+						]
+					}
+				],
+				"parameters": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/OtpGoogleRequest"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"servers": [
+		{
+			"url": "/api/v1"
+		}
+	]
+}

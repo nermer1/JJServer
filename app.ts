@@ -97,7 +97,16 @@ const swaggerOptions = {
     swagger: {}
 };
 
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerJsdoc(swaggerOptions.doc), swaggerOptions.swagger));
+// tsoa 기반 자동 생성 Swagger 연동 (POC)
+try {
+    const tsoaSwaggerDoc = JSON.parse(fs.readFileSync('./swagger/swagger.json', 'utf8'));
+    app.use('/docs/v2', swaggerUi.serveFiles(tsoaSwaggerDoc), swaggerUi.setup(tsoaSwaggerDoc));
+} catch (e) {
+    logger.error('tsoa swagger.json 로드 실패', e);
+}
+
+const oldSwaggerDoc = swaggerJsdoc(swaggerOptions.doc);
+app.use('/docs', swaggerUi.serveFiles(oldSwaggerDoc, swaggerOptions.swagger), swaggerUi.setup(oldSwaggerDoc, swaggerOptions.swagger));
 
 const mongoTest = DBFactory.createDB('mongo');
 mongoTest.connect();

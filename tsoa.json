@@ -1,0 +1,29 @@
+{
+    "entryFile": "app.ts",
+    "noImplicitAdditionalProperties": "throw-on-extras",
+    "controllerPathGlobs": [
+        "src/controller/*Controller.ts"
+    ],
+    "spec": {
+        "outputDirectory": "swagger",
+        "specVersion": 3,
+        "basePath": "/api/v1",
+        "securityDefinitions": {
+            "jwt": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            },
+            "api_key": {
+                "type": "apiKey",
+                "name": "x-api-key",
+                "in": "header"
+            }
+        }
+    },
+    "routes": {
+        "routesDir": "src/routes",
+        "authenticationModule": "src/middleware/tsoaAuth.ts",
+        "esm": true
+    }
+}
