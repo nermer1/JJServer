@@ -1,13 +1,10 @@
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
-import {Request} from 'express';
+import {Request, Response, NextFunction} from 'express';
 import crypto from 'crypto';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 import logger from '../utils/logger.js';
-
-// 위험한 확장자 목록 (소문자로 비교)
-const FORBIDDEN_EXTENSIONS = ['.exe', '.sh', '.bat', '.cmd', '.msi', '.php', '.jsp', '.asp', '.aspx', '.cgi', '.pl', '.py', '.js', '.vbs'];
 
 // Multer 스토리지 설정
 const storage = multer.diskStorage({
@@ -49,19 +46,37 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
         return cb(new Error('확장자가 없는 파일은 업로드할 수 없습니다.'));
     }
 
-    // 2. 위험 확장자 차단
-    if (FORBIDDEN_EXTENSIONS.includes(ext)) {
+    // 2. 위험 확장자 차단 (DB 설정에서 동적으로 로드)
+    const defaultForbidden = '.exe,.sh,.bat,.cmd,.msi,.php,.jsp,.asp,.aspx,.cgi,.pl,.py,.js,.vbs';
+    const forbiddenExtStr = SystemSettingsCacheService.get('FORBIDDEN_FILE_EXTENSIONS', defaultForbidden);
+    const forbiddenExts = forbiddenExtStr.split(',').map((e) => e.trim().toLowerCase());
+
+    if (forbiddenExts.includes(ext)) {
         return cb(new Error(`보안상 금지된 확장자(${ext})입니다.`));
     }
 
     cb(null, true); // 성공 시 true
 };
 
-// Multer 인스턴스 생성
-export const upload = multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 10 * 1024 * 1024 - 1 // 10MB 미만 제한
+// 동적 설정을 반영하기 위한 래퍼 객체
+export const upload = {
+    single: (fieldName: string) => {
+        return (req: Request, res: Response, next: NextFunction) => {
+            // DB 설정에서 파일 사이즈 제한 로드 (기본값 10MB)
+            const sizeLimitMbStr = SystemSettingsCacheService.get('MAX_UPLOAD_FILE_SIZE_MB', '10');
+            const sizeLimitMb = parseInt(sizeLimitMbStr, 10);
+            const sizeLimitBytes = (isNaN(sizeLimitMb) ? 10 : sizeLimitMb) * 1024 * 1024 - 1;
+
+            const multerInstance = multer({
+                storage: storage,
+                fileFilter: fileFilter,
+                limits: {
+                    fileSize: sizeLimitBytes
+                }
+            });
+
+            // 생성된 multer 인스턴스의 미들웨어 실행
+            multerInstance.single(fieldName)(req, res, next);
+        };
     }
-});
+};
