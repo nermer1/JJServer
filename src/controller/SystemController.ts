@@ -7,6 +7,7 @@ import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js
 import {DBLogger} from '../utils/DBLogger.js';
 import {reloadTransporter} from '../mail/sendMail.js';
 import slackService from '../service/SlackService.js';
+import hypervSocketService from '../service/HypervSocketService.js';
 
 class SystemController {
     public async getCombinedIps(req: Request, res: Response): Promise<void> {
@@ -63,6 +64,7 @@ class SystemController {
                 // TODO: 특정 키만 리로드하게 최적화할 수도 있으나, 일단 전체 리로드 수행
                 reloadTransporter();
                 slackService.reloadClient();
+                hypervSocketService.reloadClient();
 
                 logger.info(`[SystemController] 시스템 설정(${actionStr}) 후 모듈 명시적 리로드 완료`);
             }
