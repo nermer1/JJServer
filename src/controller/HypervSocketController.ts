@@ -1,6 +1,5 @@
 import {Request, Response} from 'express';
 import HypervSocketService from '../service/HypervSocketService.js';
-import logger from '../utils/logger.js';
 
 class HypervSocketController {
     public async heartbeat(req: Request, res: Response): Promise<void> {
@@ -49,4 +48,3 @@ class HypervSocketController {
 }
 
 export default new HypervSocketController();
-

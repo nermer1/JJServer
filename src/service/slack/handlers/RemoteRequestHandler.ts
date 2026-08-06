@@ -6,21 +6,12 @@ import HypervSocketService from '../../HypervSocketService.js';
 import {schemas} from '../../../schemas/schemaMap.js';
 import {dateUtil} from '../../../utils/Utils.js';
 import logger from '../../../utils/logger.js';
+import {SlackActionHelper} from '../SlackActionHelper.js';
 
 export class RemoteRequestHandler {
     static async handleApproveAction(payload: any, value: string, responseUrl: string, slackClient: SlackMessenger) {
-        // message_ts는 그 자체로 발행된 시간을 나타내는 UNIX 타임스탬프입니다. (예: 1712345678.001230)
-        const messageTs = payload.message?.ts || payload.container?.message_ts;
-        if (messageTs) {
-            // 1. 발송된 지 60초가 넘었는지 검사 (최초 메시지 발송 시간 기준 1분 제한)
-            if (dateUtil.isUnixSecondsExpired(messageTs, 60)) {
-                await apiClient.post(responseUrl, {
-                    replace_original: true,
-                    text: '⏳ 유효시간(1분)이 지나 만료된 기능입니다.',
-                    response_type: 'ephemeral'
-                });
-                return;
-            }
+        if (await SlackActionHelper.isActionExpired(payload, responseUrl, 60)) {
+            return;
         }
 
         const io = HypervSocketService.getIo();
@@ -40,6 +31,11 @@ export class RemoteRequestHandler {
         }
 
         const approverName = await slackClient.getDisplayName(payload.user?.id);
+
+        // 핸드오버 상태 및 대기열 업데이트
+        if (requesterHostname) {
+            HypervSocketService.markAsAccepted(vmName, requesterHostname, 'VM');
+        }
 
         if (io) {
             // 해당 VM을 소유한 대상 호스트(targetHostname)의 소켓 방으로 직접 이벤트 송신 (객체 포맷팅)
@@ -100,17 +96,8 @@ export class RemoteRequestHandler {
     }
 
     static async handleDenyAction(payload: any, value: string, responseUrl: string, slackClient: SlackMessenger) {
-        const messageTs = payload.message?.ts || payload.container?.message_ts;
-        if (messageTs) {
-            // 1. 발송된 지 60초가 넘었는지 검사 (최초 메시지 발송 시간 기준 1분 제한)
-            if (dateUtil.isUnixSecondsExpired(messageTs, 60)) {
-                await apiClient.post(responseUrl, {
-                    replace_original: true,
-                    text: '⏳ 유효시간(1분)이 지나 만료된 기능입니다.',
-                    response_type: 'ephemeral'
-                });
-                return;
-            }
+        if (await SlackActionHelper.isActionExpired(payload, responseUrl, 60)) {
+            return;
         }
 
         const io = HypervSocketService.getIo();
@@ -194,6 +181,51 @@ export class RemoteRequestHandler {
             text: '원격 접속 요청 알림',
             response_type: 'in_channel',
             blocks
+        });
+    }
+
+    static async handleWaitlistConnectAction(payload: any, value: string, responseUrl: string, slackClient: SlackMessenger) {
+        if (await SlackActionHelper.isActionExpired(payload, responseUrl, 60)) {
+            return;
+        }
+
+        let targetName = 'Unknown';
+        let type = 'VM';
+        let requesterHostname = '';
+        let requesterName = '';
+
+        try {
+            const data = JSON.parse(value);
+            targetName = data.targetName;
+            type = data.type;
+            requesterHostname = data.requesterHostname;
+            requesterName = data.requesterName;
+        } catch (e) {
+            logger.warn('Failed to parse waitlist connect action value');
+        }
+
+        const io = HypervSocketService.getIo();
+        if (io && requesterHostname) {
+            if (type === 'VM') {
+                io.to(requesterHostname).emit('vm-connect-request', {
+                    vmName: targetName,
+                    requesterName,
+                    requesterHostname
+                });
+            } else if (type === 'OTP') {
+                io.to(requesterHostname).emit('otp-connect-request', {
+                    phoneName: targetName,
+                    requesterName,
+                    requesterHostname
+                });
+            }
+        }
+
+        // 버튼을 누른 슬랙 메시지를 클릭 피드백 텍스트로 교체
+        await apiClient.post(responseUrl, {
+            replace_original: true,
+            text: `[접속완료] \`${targetName}\` ${type}`,
+            response_type: 'ephemeral'
         });
     }
 }

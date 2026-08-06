@@ -2,12 +2,10 @@ import {exec} from 'child_process';
 import {promisify} from 'util';
 import logger from '../utils/logger.js';
 import {Server} from 'socket.io';
-import WebPushService from './WebPushService.js';
 import {schemas} from '../schemas/schemaMap.js';
 import redisTest from '../db/RedisTest.js';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 import {SlackMessenger} from '../messenger/slack/SlackMessenger.js';
-import {basicProperty} from '../properties/ServerProperty.js';
 import {RemoteRequestBlocks} from './slack/blocks/RemoteRequestBlocks.js';
 import {OtpRequestBlocks} from './slack/blocks/OtpRequestBlocks.js';
 
@@ -39,6 +37,10 @@ class HypervSocketService {
     private isDirty = false;
     private io: Server | null = null;
 
+    private vmWaitlist = new Map<string, {requesterName: string; requesterHostname: string}[]>();
+    private otpWaitlist = new Map<string, {requesterName: string; requesterHostname: string}[]>();
+    private handoverMap = new Map<string, number>();
+
     public getIo(): Server | null {
         return this.io;
     }
@@ -55,6 +57,37 @@ class HypervSocketService {
 
                 const otpStatus = await this.computeOtpStatus();
                 this.io.emit('otp-status-update', otpStatus);
+
+                // VM 대기열 확인 및 알림
+                const activeVmNames = new Set(status.map((v) => v.vmName));
+                const now = Date.now();
+
+                for (const [vmName, waiters] of this.vmWaitlist.entries()) {
+                    if (waiters.length > 0 && !activeVmNames.has(vmName)) {
+                        const handoverTime = this.handoverMap.get(vmName);
+                        if (handoverTime && now - handoverTime < 15000) {
+                            // 15초 이내에 양도가 발생했다면, 새 주인의 VM이 켜지는 중이므로 알림 생략
+                            continue;
+                        }
+                        await this.notifyWaiters(vmName, waiters, 'VM');
+                        this.vmWaitlist.delete(vmName);
+                        this.handoverMap.delete(vmName);
+                    }
+                }
+
+                // OTP 대기열 확인 및 알림
+                const activePhoneNames = new Set(otpStatus.map((v) => v.phoneName));
+                for (const [phoneName, waiters] of this.otpWaitlist.entries()) {
+                    if (waiters.length > 0 && !activePhoneNames.has(phoneName)) {
+                        const handoverTime = this.handoverMap.get(phoneName);
+                        if (handoverTime && now - handoverTime < 15000) {
+                            continue;
+                        }
+                        await this.notifyWaiters(phoneName, waiters, 'OTP');
+                        this.otpWaitlist.delete(phoneName);
+                        this.handoverMap.delete(phoneName);
+                    }
+                }
             } catch (error) {
                 logger.error(`Status broadcast error: ${error}`);
             }
@@ -73,6 +106,59 @@ class HypervSocketService {
                 logger.error(`Redis keys check error: ${err}`);
             }
         }, 5000);
+    }
+
+    private async notifyWaiters(targetName: string, waiters: {requesterName: string; requesterHostname: string}[], type: 'VM' | 'OTP') {
+        for (const waiter of waiters) {
+            try {
+                if (!waiter.requesterHostname) continue;
+                const targetUser = await schemas.users.model.findOne({hostname: waiter.requesterHostname}).select('slackId').lean();
+                if (targetUser && targetUser.slackId) {
+                    const message =
+                        type === 'VM'
+                            ? `*${targetName}* VM의 사용이 종료되었습니다. 지금 바로 접속 가능합니다!`
+                            : `*${targetName}* 폰의 사용이 종료되었습니다. 지금 바로 접속 가능합니다!`;
+
+                    const payloadValue = JSON.stringify({
+                        targetName,
+                        type,
+                        requesterHostname: waiter.requesterHostname,
+                        requesterName: waiter.requesterName
+                    });
+
+                    await this.slackClient.sendCardMessage({
+                        channelId: targetUser.slackId,
+                        message: [
+                            {
+                                type: 'section',
+                                text: {
+                                    type: 'mrkdwn',
+                                    text: message
+                                }
+                            },
+                            {
+                                type: 'actions',
+                                elements: [
+                                    {
+                                        type: 'button',
+                                        text: {
+                                            type: 'plain_text',
+                                            text: '접속하기',
+                                            emoji: true
+                                        },
+                                        value: payloadValue,
+                                        action_id: 'waitlist_connect_request',
+                                        style: 'primary'
+                                    }
+                                ]
+                            }
+                        ]
+                    });
+                }
+            } catch (err) {
+                logger.error(`[Slack Notify Error] Failed to send waitlist notification for ${targetName}: ${err}`);
+            }
+        }
     }
 
     private async getHostnameToUserName(key: string): Promise<string> {
@@ -165,6 +251,14 @@ class HypervSocketService {
             return {ok: false, message: '현재 사용 중인 사람이 없습니다.'};
         }
 
+        if (requesterHostname) {
+            const waiters = this.vmWaitlist.get(vmName) || [];
+            if (!waiters.find((w) => w.requesterHostname === requesterHostname)) {
+                waiters.push({requesterName, requesterHostname});
+                this.vmWaitlist.set(vmName, waiters);
+            }
+        }
+
         if (this.io) {
             logger.info(`[use-request] ${vmName}, ${requesterName}, ${requesterHostname}`);
 
@@ -223,6 +317,14 @@ class HypervSocketService {
             return {ok: false, message: '현재 사용 중인 사람이 없습니다.'};
         }
 
+        if (requesterHostname) {
+            const waiters = this.otpWaitlist.get(phoneName) || [];
+            if (!waiters.find((w) => w.requesterHostname === requesterHostname)) {
+                waiters.push({requesterName, requesterHostname});
+                this.otpWaitlist.set(phoneName, waiters);
+            }
+        }
+
         if (this.io) {
             logger.info(`[otp-use-request] ${phoneName}, ${requesterName}, ${requesterHostname}`);
         }
@@ -254,9 +356,43 @@ class HypervSocketService {
         return {ok: true};
     }
 
+    public markAsAccepted(targetName: string, requesterHostname: string, type: 'VM' | 'OTP') {
+        const waitlist = type === 'VM' ? this.vmWaitlist : this.otpWaitlist;
+
+        // 승인받은 특정인만 대기열에서 제거
+        const waiters = waitlist.get(targetName);
+        if (waiters) {
+            const updated = waiters.filter((w) => w.requesterHostname !== requesterHostname);
+            if (updated.length > 0) {
+                waitlist.set(targetName, updated);
+            } else {
+                waitlist.delete(targetName);
+            }
+        }
+        // 양도 유예(핸드오버) 시간 15초 설정
+        this.handoverMap.set(targetName, Date.now());
+        logger.info(`[waitlist] ${targetName} 핸드오버 타이머 시작, 승인자: ${requesterHostname}`);
+    }
+
     public requestResponse(vmName: string, accepted: boolean, requesterHostname?: string) {
         logger.info('requesterHostname', requesterHostname);
         logger.info('this.io is initialized:', !!this.io);
+
+        if (accepted && requesterHostname) {
+            // 승인받은 특정인만 대기열에서 제거
+            const waiters = this.vmWaitlist.get(vmName);
+            if (waiters) {
+                const updated = waiters.filter((w) => w.requesterHostname !== requesterHostname);
+                if (updated.length > 0) {
+                    this.vmWaitlist.set(vmName, updated);
+                } else {
+                    this.vmWaitlist.delete(vmName);
+                }
+            }
+            // 양도 유예(핸드오버) 시간 15초 설정 (기존 점유자가 꺼지고 새 주인이 켜는 동안 오알림 방지)
+            this.handoverMap.set(vmName, Date.now());
+        }
+
         if (requesterHostname && this.io) {
             this.io.to(requesterHostname).emit('request-result', {vmName, accepted});
             logger.info(`[request-response] ${vmName} → ${accepted ? '수락' : '거절'} → ${requesterHostname}`);

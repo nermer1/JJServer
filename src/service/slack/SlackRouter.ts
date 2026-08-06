@@ -1,5 +1,4 @@
 import {Request, Response} from 'express';
-import logger from '../../utils/logger.js';
 import {DBLogger} from '../../utils/DBLogger.js';
 import {SlackException} from '../../exception/exceptions.js';
 import {OtpHandler} from './handlers/OtpHandler.js';
@@ -71,6 +70,9 @@ export class SlackRouter {
                     break;
                 case 'remote_request_deny':
                     await RemoteRequestHandler.handleDenyAction(payload, value, response_url, this.slackClient);
+                    break;
+                case 'waitlist_connect_request':
+                    await RemoteRequestHandler.handleWaitlistConnectAction(payload, value, response_url, this.slackClient);
                     break;
                 case 'otp_request_approve':
                     await OtpSocketRequestHandler.handleApproveAction(payload, value, response_url, this.slackClient);

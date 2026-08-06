@@ -6,19 +6,12 @@ import HypervSocketService from '../../HypervSocketService.js';
 import {schemas} from '../../../schemas/schemaMap.js';
 import {dateUtil} from '../../../utils/Utils.js';
 import logger from '../../../utils/logger.js';
+import {SlackActionHelper} from '../SlackActionHelper.js';
 
 export class OtpSocketRequestHandler {
     static async handleApproveAction(payload: any, value: string, responseUrl: string, slackClient: SlackMessenger) {
-        const messageTs = payload.message?.ts || payload.container?.message_ts;
-        if (messageTs) {
-            if (dateUtil.isUnixSecondsExpired(messageTs, 60)) {
-                await apiClient.post(responseUrl, {
-                    replace_original: true,
-                    text: '⏳ 유효시간(1분)이 지나 만료된 기능입니다.',
-                    response_type: 'ephemeral'
-                });
-                return;
-            }
+        if (await SlackActionHelper.isActionExpired(payload, responseUrl, 60)) {
+            return;
         }
 
         const io = HypervSocketService.getIo();
@@ -38,6 +31,11 @@ export class OtpSocketRequestHandler {
         }
 
         const approverName = await slackClient.getDisplayName(payload.user?.id);
+
+        // 핸드오버 상태 및 대기열 업데이트
+        if (requesterHostname) {
+            HypervSocketService.markAsAccepted(phoneName, requesterHostname, 'OTP');
+        }
 
         if (io) {
             if (requesterHostname) {
@@ -85,16 +83,8 @@ export class OtpSocketRequestHandler {
     }
 
     static async handleDenyAction(payload: any, value: string, responseUrl: string, slackClient: SlackMessenger) {
-        const messageTs = payload.message?.ts || payload.container?.message_ts;
-        if (messageTs) {
-            if (dateUtil.isUnixSecondsExpired(messageTs, 60)) {
-                await apiClient.post(responseUrl, {
-                    replace_original: true,
-                    text: '⏳ 유효시간(1분)이 지나 만료된 기능입니다.',
-                    response_type: 'ephemeral'
-                });
-                return;
-            }
+        if (await SlackActionHelper.isActionExpired(payload, responseUrl, 60)) {
+            return;
         }
 
         let phoneName = 'Unknown';
