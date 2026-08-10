@@ -1,9 +1,25 @@
 import winston from 'winston';
 import 'winston-daily-rotate-file';
 import {TransformableInfo} from 'logform';
+import path from 'path';
+import fs from 'fs';
 
 interface LogInfo extends TransformableInfo {
     timestamp?: string;
+}
+
+/**
+ * 로그 저장 디렉토리.
+ * - 기본값 'logs'는 프로세스 CWD 기준 상대경로(기존 동작).
+ * - 배포 환경에서는 LOG_DIR에 "절대경로"를 지정하면 실행 위치(CWD)가 바뀌어도
+ *   항상 같은 곳에 로그가 쌓인다. (도커면 그 경로를 볼륨 마운트해서 영속화)
+ *   예) LOG_DIR=/var/log/helper  +  -v /host/logs:/var/log/helper
+ */
+const LOG_DIR = process.env.LOG_DIR || 'logs';
+try {
+    fs.mkdirSync(LOG_DIR, {recursive: true});
+} catch (e) {
+    console.error('[logger] 로그 디렉토리 생성 실패:', LOG_DIR, e);
 }
 
 const logPrintFormat = winston.format.printf((info) => {
@@ -28,7 +44,7 @@ const logger = winston.createLogger({
 
         // 2. 파일 (File): 색상 없이 순수 텍스트만 저장
         new winston.transports.DailyRotateFile({
-            filename: 'logs/app-%DATE%.log',
+            filename: path.join(LOG_DIR, 'app-%DATE%.log'),
             datePattern: 'YYYY-MM-DD',
             maxFiles: '14d',
             format: winston.format.combine(

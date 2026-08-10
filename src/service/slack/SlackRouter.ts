@@ -4,6 +4,7 @@ import {SlackException} from '../../exception/exceptions.js';
 import {OtpHandler} from './handlers/OtpHandler.js';
 import {NbbangHandler} from './handlers/NbbangHandler.js';
 import {WikiHandler} from './handlers/WikiHandler.js';
+import {ChatHandler} from './handlers/ChatHandler.js';
 import {HelpBlocks} from './blocks/HelpBlocks.js';
 import {RemoteRequestHandler} from './handlers/RemoteRequestHandler.js';
 import {OtpSocketRequestHandler} from './handlers/OtpSocketRequestHandler.js';
@@ -31,6 +32,16 @@ export class SlackRouter {
                 await DBLogger.slack(`Command [${command}]`, req.body);
                 res.status(200).send();
                 await NbbangHandler.handleCommand(req, res, this.slackClient);
+                break;
+            case '/ask':
+            case '/ask_test':
+                await DBLogger.slack(`Command [${command}]`, req.body);
+                // 슬랙 3초 제한 대응: 먼저 "생각 중" ack을 보내고, 실제 답변은 response_url로 지연 전송
+                res.status(200).json({
+                    response_type: 'ephemeral',
+                    text: '답변을 찾고 있어요... 잠시만요.'
+                });
+                await ChatHandler.handleCommand(req);
                 break;
             case '/help':
             case '/help_test':

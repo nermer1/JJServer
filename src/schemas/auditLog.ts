@@ -1,4 +1,5 @@
 import CommonSchema from './CommonSchema.js';
+import ApiReturn from '../structure/ApiReturn.js';
 import {Schema} from 'mongoose';
 
 class AuditLogSchema extends CommonSchema {
@@ -7,63 +8,105 @@ class AuditLogSchema extends CommonSchema {
     }
 
     async findAll(params: any) {
-        // 1. 공통 findAll 로직을 태워 원본 AuditLog 목록을 가져옵니다.
-        const apiReturn = await super.findAll(params);
-        let logs = apiReturn.getTableData();
+        // 프론트엔드에서 필터 파라미터를 option 객체에 담아 보낸다고 가정
+        const option = params.option || {};
 
-        if (!Array.isArray(logs) || logs.length === 0) {
-            return apiReturn;
+        // 1. 페이지네이션 파라미터 추출
+        const page = Number(option.page) || 1;
+        const limit = Number(option.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        // 2. 동적 필터 쿼리 구성
+        const filter: any = {};
+
+        // 카테고리 검색 (전체가 아닐 경우)
+        if (option.category && option.category !== '전체' && option.category !== '전체 카테고리') {
+            filter.category = option.category;
         }
 
-        // Mongoose Document 객체를 일반 JavaScript 객체로 변환하여 수정이 가능하게 만듭니다.
-        logs = logs.map((log: any) => (log.toObject ? log.toObject() : log));
+        // 상태 검색 (전체 상태가 아닐 경우)
+        if (option.status && option.status !== '전체 상태' && option.status !== '전체') {
+            filter.status = option.status;
+        }
 
-        // 2. 현재 조회된 모든 로그들의 userId 목록 추출 (중복 제거)
-        const userIds = [...new Set(logs.map((log: any) => log.userId).filter(Boolean))];
+        // 기간 검색 (ISO String 포맷 기반)
+        if (option.startDate || option.endDate) {
+            filter.createdAt = {};
+            if (option.startDate) filter.createdAt.$gte = new Date(option.startDate);
+            if (option.endDate) filter.createdAt.$lte = new Date(option.endDate);
+        }
 
-        if (userIds.length > 0) {
-            // 순환 참조 방지를 위해 동적 import 사용
-            const {schemas} = await import('./schemaMap.js');
+        // 키워드 검색 (action 내용 또는 userId에 대한 부분 일치 검색)
+        if (option.keyword) {
+            filter.$or = [
+                { action: { $regex: option.keyword, $options: 'i' } },
+                { userId: { $regex: option.keyword, $options: 'i' } }
+            ];
+        }
 
-            // 3. 추출한 userId들(이메일 또는 슬랙아이디)로 Users 테이블을 한 번에 뒤집니다 (N+1 쿼리 방지)
-            const users = await schemas.users.model
-                .find({
-                    $or: [{email: {$in: userIds}}, {slackId: {$in: userIds}}]
-                })
-                .select('email name slackId')
-                .lean();
+        // 3. 전체 데이터 카운트 (페이지네이션 정보용)
+        const totalCount = await this.model.countDocuments(filter);
 
-            // 매칭 속도를 높이기 위한 딕셔너리(Map) 구조화
-            const userMapByEmail: Record<string, any> = {};
-            const userMapBySlackId: Record<string, any> = {};
+        // 4. 페이징 및 필터가 적용된 최신 로그 데이터 조회
+        let logs = await this.model.find(filter)
+            .sort({ createdAt: -1 }) // 최신순 정렬
+            .skip(skip)
+            .limit(limit)
+            .lean(); // toObject() 불필요, 순수 JS 객체 반환으로 속도 향상
 
-            users.forEach((u: any) => {
-                if (u.email) userMapByEmail[u.email] = u;
-                if (u.slackId) userMapBySlackId[u.slackId] = u;
-            });
+        if (logs.length > 0) {
+            // 5. 현재 조회된 로그들의 userId 목록 추출 (중복 제거)
+            const userIds = [...new Set(logs.map((log: any) => log.userId).filter(Boolean))];
 
-            // 4. 로그 리스트를 순회하며 이메일 및 이름 정보 주입 (Mapping)
-            logs.forEach((log: any) => {
-                let matchedUser = null;
+            if (userIds.length > 0) {
+                // 순환 참조 방지를 위해 동적 import 사용
+                const {schemas} = await import('./schemaMap.js');
 
-                if (log.category === 'SLACK' && log.userId && log.userId.startsWith('U')) {
-                    // 슬랙 아이디인 경우
-                    matchedUser = userMapBySlackId[log.userId];
-                    if (matchedUser) {
-                        log.userId = matchedUser.email; // 원본 슬랙 ID를 이메일로 덮어씌움
+                // 6. 추출한 userId들(이메일 또는 슬랙아이디)로 Users 테이블을 한 번에 조회
+                const users = await schemas.users.model
+                    .find({
+                        $or: [{email: {$in: userIds}}, {slackId: {$in: userIds}}]
+                    })
+                    .select('email name slackId')
+                    .lean();
+
+                const userMapByEmail: Record<string, any> = {};
+                const userMapBySlackId: Record<string, any> = {};
+
+                users.forEach((u: any) => {
+                    if (u.email) userMapByEmail[u.email] = u;
+                    if (u.slackId) userMapBySlackId[u.slackId] = u;
+                });
+
+                // 7. 로그 리스트를 순회하며 이메일 및 이름 정보 주입
+                logs.forEach((log: any) => {
+                    let matchedUser = null;
+
+                    if (log.category === 'SLACK' && log.userId && log.userId.startsWith('U')) {
+                        matchedUser = userMapBySlackId[log.userId];
+                        if (matchedUser) {
+                            log.userId = matchedUser.email;
+                        }
+                    } else {
+                        matchedUser = userMapByEmail[log.userId];
                     }
-                } else {
-                    // 일반 이메일인 경우
-                    matchedUser = userMapByEmail[log.userId];
-                }
 
-                // 매칭된 유저가 있으면 이름을 넣고, 없으면 기본값 표기
-                log.userName = matchedUser ? matchedUser.name : log.userId === 'SYSTEM' ? '시스템' : '알 수 없음';
-            });
+                    log.userName = matchedUser ? matchedUser.name : log.userId === 'SYSTEM' ? '시스템' : '알 수 없음';
+                });
+            }
         }
 
-        // 5. 가공된 데이터를 다시 ApiReturn 구조체에 덮어씌워서 반환
+        // 8. ApiReturn 구조체에 데이터 및 페이징 정보 세팅
+        const apiReturn = new ApiReturn();
         apiReturn.setTableData(logs);
+        apiReturn.put('pagination', {
+            totalItems: totalCount,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: page,
+            limit: limit
+        });
+        apiReturn.setReturnMessage('조회 성공');
+
         return apiReturn;
     }
 }

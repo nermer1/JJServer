@@ -13,125 +13,165 @@ class CustomerSchema extends CommonSchema {
 
     async insert(params: DBParamsType): Promise<ApiReturn> {
         let apiReturn = new ApiReturn();
-        const session = await mongoose.startSession();
-        session.startTransaction();
+        const maxRetries = 3;
 
-        try {
-            const option = params.option || {};
-            let dataToInsert = params.data.tableData;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            const session = await mongoose.startSession();
+            session.startTransaction();
 
-            // 미들웨어에서 권한 제한(department_ids)이 넘어온 경우, 프론트가 보낸 데이터 검증
-            if (option.department_ids) {
-                const reqDeptId = option.department_ids.toString();
-                const items = Array.isArray(dataToInsert) ? dataToInsert : [dataToInsert];
+            try {
+                const option = params.option || {};
+                let dataToInsert = params.data.tableData;
 
-                for (const item of items) {
-                    const depts = item.department_ids;
-                    if (!depts || !Array.isArray(depts)) {
-                        throw new Error('소속 부서 ID(department_ids)를 배열 형태로 포함해야 합니다.');
-                    }
-                    if (!depts.some((d: any) => {
-                        const deptIdStr = (typeof d === 'object' && d !== null) ? (d._id?.toString() || d.id?.toString()) : d?.toString();
-                        return deptIdStr === reqDeptId;
-                    })) {
-                        throw new Error('생성 권한이 없습니다. 본인 소속 부서 ID를 반드시 포함하여 생성해야 합니다.');
+                // 미들웨어에서 권한 제한(department_ids)이 넘어온 경우, 프론트가 보낸 데이터 검증
+                if (option.department_ids) {
+                    const reqDeptId = option.department_ids.toString();
+                    const items = Array.isArray(dataToInsert) ? dataToInsert : [dataToInsert];
+
+                    for (const item of items) {
+                        const depts = item.department_ids;
+                        if (!depts || !Array.isArray(depts)) {
+                            throw new Error('소속 부서 ID(department_ids)를 배열 형태로 포함해야 합니다.');
+                        }
+                        if (!depts.some((d: any) => {
+                            const deptIdStr = (typeof d === 'object' && d !== null) ? (d._id?.toString() || d.id?.toString()) : d?.toString();
+                            return deptIdStr === reqDeptId;
+                        })) {
+                            throw new Error('생성 권한이 없습니다. 본인 소속 부서 ID를 반드시 포함하여 생성해야 합니다.');
+                        }
                     }
                 }
+
+                const returnData = await this.model.create(dataToInsert, {session});
+                const etcData = params.data.tableData[0].etc;
+                etcData._id = returnData[0]._id;
+                etcData.code = returnData[0].code;
+                await CustomerEtc.model.create([etcData], {session});
+
+                const findParams: DBParamsType = {
+                    option: {_id: returnData[0]._id},
+                    data: {
+                        tableData: []
+                    }
+                };
+
+                apiReturn = await this.findAll(findParams);
+                apiReturn.setReturnMessage('생성 성공');
+                
+                await session.commitTransaction();
+                return apiReturn;
+
+            } catch (error: any) {
+                await session.abortTransaction();
+                
+                if (error.code === 112 || (error.message && error.message.includes('Write conflict'))) {
+                    if (attempt === maxRetries) {
+                        logger.error(`생성 트랜잭션 재시도 횟수 초과 (${maxRetries}회 실패)`, error);
+                        apiReturn.setReturnMessage('일시적인 시스템 혼잡으로 생성에 실패했습니다. 다시 시도해주세요.');
+                        return apiReturn;
+                    }
+                    logger.warn(`생성 Write conflict 발생. ${attempt}번째 재시도 중...`);
+                    await new Promise(resolve => setTimeout(resolve, 50 * attempt));
+                    continue;
+                }
+
+                logger.error(error.message, error);
+                apiReturn.setReturnMessage(error.message);
+                return apiReturn;
+            } finally {
+                session.endSession();
             }
-
-            const returnData = await this.model.create(dataToInsert, {session});
-            const etcData = params.data.tableData[0].etc;
-            etcData._id = returnData[0]._id;
-            etcData.code = returnData[0].code;
-            await CustomerEtc.model.create([etcData], {session});
-
-            const findParams: DBParamsType = {
-                option: {_id: returnData[0]._id},
-                data: {
-                    tableData: []
-                }
-            };
-
-            apiReturn = await this.findAll(findParams);
-            apiReturn.setReturnMessage('생성 성공');
-            await session.commitTransaction();
-        } catch (error: any) {
-            await session.abortTransaction();
-            logger.error(error.message, error);
-            apiReturn.setReturnMessage(error.message);
-        } finally {
-            session.endSession();
         }
         return apiReturn;
     }
 
     async update(params: DBParamsType): Promise<ApiReturn> {
         let apiReturn = new ApiReturn();
-        const session = await mongoose.startSession();
-        session.startTransaction();
-        try {
-            const inputData = params.data.tableData[0];
-            const etcData = inputData.etc;
-            const dataId = inputData._id;
-            const inputUpdatedAt = inputData.updatedAt;
-            const option = params.option || {}; // 권한 우회 방지용 옵션
+        const maxRetries = 3;
 
-            etcData._id = dataId;
-            etcData.code = inputData.code;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            const session = await mongoose.startSession();
+            session.startTransaction();
+            try {
+                const inputData = params.data.tableData[0];
+                const etcData = inputData.etc;
+                const dataId = inputData._id;
+                const inputUpdatedAt = inputData.updatedAt;
+                const option = params.option || {}; // 권한 우회 방지용 옵션
 
-            // 미들웨어가 주입한 option 조건 병합
-            const query: any = {_id: dataId, ...option};
+                etcData._id = dataId;
+                etcData.code = inputData.code;
 
-            // 동시성 제어 (낙관적 락): 프론트에서 받은 updatedAt이 있으면 쿼리에 추가
-            if (inputUpdatedAt) {
-                query.updatedAt = inputUpdatedAt;
-            }
+                // 미들웨어가 주입한 option 조건 병합
+                const query: any = {_id: dataId, ...option};
 
-            // _id와 etc 필드를 제거한 뒤 업데이트용 객체 생성
-            const updateData = {...inputData};
-            delete updateData._id;
-            delete updateData.etc;
-            delete updateData.updatedAt; // 자동 갱신되도록 수동 덮어쓰기 방지
-
-            // 기존 코드에 있던 취약점 수정: _id 뿐만 아니라 권한 조건(query)도 검사
-            const returnData = await this.model.findOneAndUpdate(query, flatten(updateData, {safe: true}), {new: true, session});
-
-            if (!returnData) {
-                // updatedAt 조건 때문에 못 찾은 거라면(동시에 다른 사람이 수정함) 409 에러 발생
+                // 동시성 제어 (낙관적 락): 프론트에서 받은 updatedAt이 있으면 쿼리에 추가
                 if (inputUpdatedAt) {
-                    const exists = await this.model.exists({ _id: dataId, ...option });
-                    if (exists) {
-                        const error: any = new Error('데이터가 다른 사용자에 의해 이미 수정되었습니다. 최신 데이터를 확인 후 다시 시도해주세요.');
-                        error.status = 409;
-                        throw error;
+                    query.updatedAt = inputUpdatedAt;
+                }
+
+                // _id와 etc 필드를 제거한 뒤 업데이트용 객체 생성
+                const updateData = {...inputData};
+                delete updateData._id;
+                delete updateData.etc;
+                delete updateData.updatedAt; // 자동 갱신되도록 수동 덮어쓰기 방지
+
+                // 기존 코드에 있던 취약점 수정: _id 뿐만 아니라 권한 조건(query)도 검사
+                const returnData = await this.model.findOneAndUpdate(query, flatten(updateData, {safe: true}), {new: true, session});
+
+                if (!returnData) {
+                    // updatedAt 조건 때문에 못 찾은 거라면(동시에 다른 사람이 수정함) 409 에러 발생
+                    if (inputUpdatedAt) {
+                        const exists = await this.model.exists({ _id: dataId, ...option });
+                        if (exists) {
+                            const error: any = new Error('데이터가 다른 사용자에 의해 이미 수정되었습니다. 최신 데이터를 확인 후 다시 시도해주세요.');
+                            error.status = 409;
+                            throw error;
+                        }
                     }
+                    throw new Error('업데이트할 데이터를 찾을 수 없거나 접근 권한이 없습니다.');
                 }
-                throw new Error('업데이트할 데이터를 찾을 수 없거나 접근 권한이 없습니다.');
-            }
 
-            await CustomerEtc.model.findOneAndUpdate({_id: dataId}, etcData, {new: true, session, runValidators: true});
+                await CustomerEtc.model.findOneAndUpdate({_id: dataId}, etcData, {new: true, session, runValidators: true});
 
-            const findParams: DBParamsType = {
-                option: {_id: returnData?._id},
-                data: {
-                    tableData: []
+                const findParams: DBParamsType = {
+                    option: {_id: returnData?._id},
+                    data: {
+                        tableData: []
+                    }
+                };
+
+                apiReturn = await this.findAll(findParams);
+                apiReturn.setReturnMessage('업데이트 성공');
+                
+                await session.commitTransaction();
+                return apiReturn;
+
+            } catch (error: any) {
+                await session.abortTransaction();
+                
+                if (error.code === 112 || (error.message && error.message.includes('Write conflict'))) {
+                    if (attempt === maxRetries) {
+                        logger.error(`업데이트 트랜잭션 재시도 횟수 초과 (${maxRetries}회 실패)`, error);
+                        apiReturn.setReturnMessage('일시적인 시스템 혼잡으로 업데이트에 실패했습니다. 다시 시도해주세요.');
+                        return apiReturn;
+                    }
+                    logger.warn(`업데이트 Write conflict 발생. ${attempt}번째 재시도 중...`);
+                    await new Promise(resolve => setTimeout(resolve, 50 * attempt));
+                    continue;
                 }
-            };
 
-            apiReturn = await this.findAll(findParams);
-            apiReturn.setReturnMessage('업데이트 성공');
-            await session.commitTransaction();
-        } catch (error: any) {
-            await session.abortTransaction();
-            console.error(error);
-            apiReturn.setReturnMessage('업데이트 실패');
-            apiReturn.setReturnErrorMessage(error.message);
-            // 에러 객체에 409 코드가 있으면 apiReturn 내부에도 마킹하여 컨트롤러가 알 수 있게 함
-            if (error.status === 409) {
-                (apiReturn as any).statusCode = 409;
+                console.error(error);
+                apiReturn.setReturnMessage('업데이트 실패');
+                apiReturn.setReturnErrorMessage(error.message);
+                // 에러 객체에 409 코드가 있으면 apiReturn 내부에도 마킹하여 컨트롤러가 알 수 있게 함
+                if (error.status === 409) {
+                    (apiReturn as any).statusCode = 409;
+                }
+                return apiReturn;
+            } finally {
+                session.endSession();
             }
-        } finally {
-            session.endSession();
         }
         return apiReturn;
     }

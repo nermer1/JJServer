@@ -14,6 +14,7 @@ import {router as push} from './push.js';
 import {router as permission} from './permission.js';
 import {router as system} from './system.js';
 import {router as files} from './files.js';
+import {router as chat} from './chat.js';
 import {RegisterRoutes} from '../routes/routes.js';
 
 import UserController from '../controller/UserController.js';
@@ -36,6 +37,7 @@ router.use('/auth', auth);
 router.use('/permission', permission);
 router.use('/system', system);
 router.use('/files', files);
+router.use('/chat', chat);
 
 // 핵심 도메인 전용 요청 가로채기 (정규식 매칭)
 router.post('/:collection(users)', userCrudPermission, UserController.call.bind(UserController));
