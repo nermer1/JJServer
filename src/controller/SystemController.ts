@@ -78,6 +78,32 @@ class SystemController {
             res.json(apiReturn);
         }
     }
+
+    /**
+     * 프론트엔드에서 직접 로그(메뉴 이동, 버튼 클릭 등)를 남길 수 있는 전용 엔드포인트입니다.
+     */
+    public async clientLog(req: Request, res: Response): Promise<void> {
+        const params = req.body;
+        const apiReturn = new ApiReturn();
+
+        try {
+            await DBLogger.log({
+                category: 'DATA',
+                action: '메뉴 이동',
+                target: 'menu',
+                actionType: 'EXECUTE',
+                userId: (req as any).user?.userId || 'UNKNOWN',
+                details: params.data
+            });
+
+            apiReturn.setReturnMessage('클라이언트 로그 저장 성공');
+            res.json(apiReturn);
+        } catch (error: any) {
+            logger.error(`[SystemController] clientLog 에러: ${error.message}`);
+            apiReturn.setReturnErrorMessage(error.message);
+            res.status(400).json(apiReturn);
+        }
+    }
 }
 
 export default new SystemController();

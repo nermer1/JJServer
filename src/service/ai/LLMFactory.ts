@@ -12,8 +12,9 @@ import SystemSettingsCacheService from '../SystemSettingsCacheService.js';
 import type {ChatProvider, EmbeddingProvider} from './types.js';
 import {OpenAIChatProvider, OpenAIEmbeddingProvider} from './providers/OpenAIProvider.js';
 import {GeminiChatProvider, GeminiEmbeddingProvider} from './providers/GeminiProvider.js';
+import {VertexChatProvider, VertexEmbeddingProvider} from './providers/VertexProvider.js';
 
-export type LLMType = 'openai' | 'gemini';
+export type LLMType = 'openai' | 'gemini' | 'vertex';
 
 /** SystemSettings 우선, 없으면 환경변수에서 조회 */
 function getSetting(key: string): string {
@@ -35,6 +36,9 @@ export class LLMFactory {
                 return new OpenAIChatProvider(getSetting('OPENAI_API_KEY'), process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini');
             case 'gemini':
                 return new GeminiChatProvider(getSetting('GEMINI_API_KEY'), process.env.GEMINI_CHAT_MODEL || 'gemini-3.5-flash');
+            case 'vertex':
+                // Vertex는 API 키가 아니라 OAuth(ADC/서비스계정)로 인증하므로 getSetting 불필요
+                return new VertexChatProvider(process.env.VERTEX_CHAT_MODEL || 'gemini-2.5-flash');
             default:
                 throw new Error(`[LLMFactory] 지원하지 않는 chat provider: ${provider}`);
         }
@@ -48,6 +52,11 @@ export class LLMFactory {
                 return new OpenAIEmbeddingProvider(getSetting('OPENAI_API_KEY'), process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small');
             case 'gemini':
                 return new GeminiEmbeddingProvider(getSetting('GEMINI_API_KEY'), process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2');
+            case 'vertex':
+                return new VertexEmbeddingProvider(
+                    process.env.VERTEX_EMBED_MODEL || 'text-multilingual-embedding-002',
+                    Number(process.env.RAG_EMBED_DIM || 768)
+                );
             default:
                 throw new Error(`[LLMFactory] 지원하지 않는 embedding provider: ${provider}`);
         }
@@ -55,4 +64,3 @@ export class LLMFactory {
 }
 
 export default LLMFactory;
-

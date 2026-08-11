@@ -33,10 +33,12 @@ class CustomerSchema extends CommonSchema {
                         if (!depts || !Array.isArray(depts)) {
                             throw new Error('소속 부서 ID(department_ids)를 배열 형태로 포함해야 합니다.');
                         }
-                        if (!depts.some((d: any) => {
-                            const deptIdStr = (typeof d === 'object' && d !== null) ? (d._id?.toString() || d.id?.toString()) : d?.toString();
-                            return deptIdStr === reqDeptId;
-                        })) {
+                        if (
+                            !depts.some((d: any) => {
+                                const deptIdStr = typeof d === 'object' && d !== null ? d._id?.toString() || d.id?.toString() : d?.toString();
+                                return deptIdStr === reqDeptId;
+                            })
+                        ) {
                             throw new Error('생성 권한이 없습니다. 본인 소속 부서 ID를 반드시 포함하여 생성해야 합니다.');
                         }
                     }
@@ -57,13 +59,12 @@ class CustomerSchema extends CommonSchema {
 
                 apiReturn = await this.findAll(findParams);
                 apiReturn.setReturnMessage('생성 성공');
-                
+
                 await session.commitTransaction();
                 return apiReturn;
-
             } catch (error: any) {
                 await session.abortTransaction();
-                
+
                 if (error.code === 112 || (error.message && error.message.includes('Write conflict'))) {
                     if (attempt === maxRetries) {
                         logger.error(`생성 트랜잭션 재시도 횟수 초과 (${maxRetries}회 실패)`, error);
@@ -71,7 +72,7 @@ class CustomerSchema extends CommonSchema {
                         return apiReturn;
                     }
                     logger.warn(`생성 Write conflict 발생. ${attempt}번째 재시도 중...`);
-                    await new Promise(resolve => setTimeout(resolve, 50 * attempt));
+                    await new Promise((resolve) => setTimeout(resolve, 50 * attempt));
                     continue;
                 }
 
@@ -122,7 +123,7 @@ class CustomerSchema extends CommonSchema {
                 if (!returnData) {
                     // updatedAt 조건 때문에 못 찾은 거라면(동시에 다른 사람이 수정함) 409 에러 발생
                     if (inputUpdatedAt) {
-                        const exists = await this.model.exists({ _id: dataId, ...option });
+                        const exists = await this.model.exists({_id: dataId, ...option});
                         if (exists) {
                             const error: any = new Error('데이터가 다른 사용자에 의해 이미 수정되었습니다. 최신 데이터를 확인 후 다시 시도해주세요.');
                             error.status = 409;
@@ -143,13 +144,12 @@ class CustomerSchema extends CommonSchema {
 
                 apiReturn = await this.findAll(findParams);
                 apiReturn.setReturnMessage('업데이트 성공');
-                
+
                 await session.commitTransaction();
                 return apiReturn;
-
             } catch (error: any) {
                 await session.abortTransaction();
-                
+
                 if (error.code === 112 || (error.message && error.message.includes('Write conflict'))) {
                     if (attempt === maxRetries) {
                         logger.error(`업데이트 트랜잭션 재시도 횟수 초과 (${maxRetries}회 실패)`, error);
@@ -157,7 +157,7 @@ class CustomerSchema extends CommonSchema {
                         return apiReturn;
                     }
                     logger.warn(`업데이트 Write conflict 발생. ${attempt}번째 재시도 중...`);
-                    await new Promise(resolve => setTimeout(resolve, 50 * attempt));
+                    await new Promise((resolve) => setTimeout(resolve, 50 * attempt));
                     continue;
                 }
 
@@ -275,31 +275,34 @@ class CustomerSchema extends CommonSchema {
  * type: 타입1 운영유지보수, 타입2 하자유지보수, 타입3 계약기간동안 운영유지보수
  */
 
-const customerSchemaDef = new Schema({
-    department_ids: [
-        {
-            type: Schema.Types.ObjectId,
-            ref: 'department'
+const customerSchemaDef = new Schema(
+    {
+        department_ids: [
+            {
+                type: Schema.Types.ObjectId,
+                ref: 'department'
+            }
+        ],
+        code: {
+            unique: true,
+            required: true,
+            type: String
+        },
+        text: {
+            required: true,
+            type: String
+        },
+        type: {
+            required: true,
+            type: String,
+            enum: ['M', 'S', 'R', '']
+        },
+        ssh: {
+            type: String
         }
-    ],
-    code: {
-        unique: true,
-        required: true,
-        type: String
     },
-    text: {
-        required: true,
-        type: String
-    },
-    type: {
-        required: true,
-        type: String,
-        enum: ['M', 'S', 'R', '']
-    },
-    ssh: {
-        type: String
-    }
-}, { timestamps: true });
+    {timestamps: true}
+);
 
 const CustomerList = new CustomerSchema('customer', customerSchemaDef);
 

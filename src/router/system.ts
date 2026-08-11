@@ -12,5 +12,8 @@ router.get('/ips', SystemController.getCombinedIps.bind(SystemController));
 // 프론트엔드에서 시스템 설정을 CRUD할 때 사용하는 엔드포인트입니다.
 router.post('/settings', systemSettingsCrudPermission, SystemController.callSettings.bind(SystemController));
 
-export {router};
+// POST /api/v1/system/logging
+// 프론트엔드에서 수동으로 로그를 남길 때 사용합니다.
+router.post('/logging', SystemController.clientLog.bind(SystemController));
 
+export {router};
