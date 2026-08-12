@@ -15,7 +15,7 @@ import logger from '../../../utils/logger.js';
 
 export class ChatHandler {
     static async handleCommand(req: Request): Promise<void> {
-        const {text, response_url} = req.body;
+        const {text, response_url, user_id} = req.body;
         const question = (text || '').trim();
 
         // 질문이 비어있으면 사용법 안내
@@ -29,7 +29,7 @@ export class ChatHandler {
         }
 
         try {
-            const result = await RagChatService.ask(question, {topK: 5});
+            const result = await RagChatService.ask(question, {topK: 5, meta: {user: user_id, via: 'slack'}});
 
             await apiClient.post(response_url, {
                 // 나만 보기: 'ephemeral' / 채널 전체 공유: 'in_channel'

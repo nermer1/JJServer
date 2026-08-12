@@ -41,10 +41,36 @@ export interface EmbeddingProvider {
     embedBatch(texts: string[], purpose?: EmbeddingPurpose): Promise<number[][]>;
 }
 
+// ============ 함수호출(tool calling) 관련 타입 ============
+
+/**
+ * LLM에게 넘길 도구(함수) 정의. LLM은 이 스펙만 보고 "어떤 함수를 어떤 인자로 부를지" 결정한다.
+ * (실제 구현/실행은 앱 코드가 담당 — 아래 ToolExecutor)
+ *   - parameters: JSON Schema (예: {type:'object', properties:{date:{type:'string'}}, required:['date']})
+ */
+export interface ToolFunctionSpec {
+    name: string;
+    description?: string;
+    parameters?: Record<string, any>;
+}
+
+/**
+ * LLM이 함수 호출을 요청했을 때, 실제로 그 함수를 실행하는 콜백.
+ * @returns 함수 실행 결과(임의 JSON). 이 결과가 다시 LLM에게 전달되어 최종 답변에 반영된다.
+ */
+export type ToolExecutor = (name: string, args: Record<string, any>) => Promise<any>;
+
 /** 답변 문장을 생성하는 provider — "생성"에 사용 */
 export interface ChatProvider {
     /** provider 식별자 (예: 'openai', 'gemini') */
     readonly name: string;
     /** 대화 메시지 배열 → 답변 텍스트 */
     chat(messages: ChatMessage[], options?: ChatOptions): Promise<string>;
+    /**
+     * 함수호출(tool calling)을 지원하는 provider만 구현한다(선택).
+     * system + user 질문 + 도구목록 + 실행콜백을 받아, 필요한 도구를 (여러 번) 호출한 뒤 최종 텍스트를 돌려준다.
+     * 미구현 provider는 이 속성이 undefined → 호출부가 일반 chat 흐름으로 폴백하면 됨.
+     */
+    chatWithTools?(systemText: string, userText: string, tools: ToolFunctionSpec[], execute: ToolExecutor, options?: ChatOptions): Promise<string>;
 }
+

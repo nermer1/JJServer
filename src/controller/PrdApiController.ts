@@ -22,23 +22,23 @@ class PrdApiController {
             let logDetails = params.data;
 
             // customerEtc 컬렉션의 경우 로그 용량 비대화 방지를 위해 info 필드 제외
-            if (collectionName === 'customerEtc' && Array.isArray(logDetails?.tableData)) {
+            if (collectionName === 'customerList' && Array.isArray(logDetails?.tableData)) {
                 const filteredTableData = logDetails.tableData.map((item: any) => {
                     if (item && item.etc && typeof item.etc === 'object' && 'info' in item.etc) {
-                        const { info, ...etcRest } = item.etc; // etc 내부의 info 필드만 제외
-                        return { ...item, etc: etcRest }; // 기존 item 속성을 유지하며 etc 덮어쓰기
+                        const {info, ...etcRest} = item.etc; // etc 내부의 info 필드만 제외
+                        return {...item, etc: etcRest}; // 기존 item 속성을 유지하며 etc 덮어쓰기
                     }
                     return item;
                 });
-                
+
                 // 원본 객체 참조 훼손 방지를 위해 얕은 복사로 덮어쓰기
-                logDetails = { ...logDetails, tableData: filteredTableData };
+                logDetails = {...logDetails, tableData: filteredTableData};
             }
 
             await DBLogger.log({
                 category: 'DATA', // 데이터 조작 명확화
                 action: `${collectionName} 데이터 ${actionStr}`,
-                target: collectionName,     // 어떤 테이블인지!
+                target: collectionName, // 어떤 테이블인지!
                 actionType: actionTypeCode, // 정확히 어떤 행위인지 (CREATE, UPDATE, DELETE)
                 userId: (req as any).user?.userId || 'UNKNOWN',
                 details: logDetails

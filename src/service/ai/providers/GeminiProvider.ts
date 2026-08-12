@@ -6,9 +6,12 @@
  * → 덕분에 상위 코드(ChatService)는 OpenAI든 Gemini든 동일하게 사용 가능.
  */
 import axios from 'axios';
-import type {ChatMessage, ChatOptions, ChatProvider, EmbeddingProvider, EmbeddingPurpose} from '../types.js';
+import type {ChatMessage, ChatOptions, ChatProvider, EmbeddingProvider, EmbeddingPurpose, ToolExecutor, ToolFunctionSpec} from '../types.js';
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+
+/** 함수호출 루프 무한방지 상한 (도구 호출 → 결과 반영 → 재호출 최대 횟수) */
+const MAX_TOOL_STEPS = 5;
 
 /**
  * 일시적 오류(429 쿼터/속도, 503 과부하)에 짧은 지수 백오프로 재시도한다.
@@ -67,6 +70,60 @@ export class GeminiChatProvider implements ChatProvider {
             {headers: {'Content-Type': 'application/json'}, timeout: 60000}
         );
         return res.data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    }
+
+    /**
+     * 함수호출(function calling) 루프. (Vertex 구현과 동일한 규격 — generateContent 의 functionCall/functionResponse)
+     * 모델이 도구를 부르면 execute()로 실행 → 결과를 대화에 넣고 다시 호출, 텍스트가 나올 때까지 반복.
+     * generativelanguage API 는 API 키 인증 + postWithRetry(429/503 백오프)를 그대로 사용.
+     */
+    async chatWithTools(systemText: string, userText: string, tools: ToolFunctionSpec[], execute: ToolExecutor, options: ChatOptions = {}): Promise<string> {
+        const model = options.model || this.model;
+        const url = `${GEMINI_BASE}/models/${model}:generateContent?key=${this.apiKey}`;
+        const config = {headers: {'Content-Type': 'application/json'}, timeout: 60000};
+        const generationConfig = {temperature: options.temperature ?? 0.2, maxOutputTokens: options.maxTokens ?? 1024};
+        const toolConfig = {tools: [{functionDeclarations: tools}]};
+        const systemInstruction = {parts: [{text: systemText}]};
+
+        // 대화 누적 (functionCall/functionResponse 가 쌓임)
+        const contents: any[] = [{role: 'user', parts: [{text: userText}]}];
+
+        for (let step = 0; step < MAX_TOOL_STEPS; step++) {
+            const res = await postWithRetry(url, {systemInstruction, contents, generationConfig, ...toolConfig}, config);
+            const parts: any[] = res.data.candidates?.[0]?.content?.parts ?? [];
+            const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
+
+            // 도구 호출이 없으면 = 최종 답변
+            if (calls.length === 0) {
+                return parts
+                    .map((p) => p.text ?? '')
+                    .join('')
+                    .trim();
+            }
+
+            // 모델의 함수호출 턴을 대화에 기록
+            contents.push({role: 'model', parts: calls.map((fc: any) => ({functionCall: fc}))});
+
+            // 각 호출 실행 → functionResponse 로 되돌려줌 (response 는 반드시 객체여야 함)
+            const responseParts = [];
+            for (const fc of calls) {
+                let result: any;
+                try {
+                    result = await execute(fc.name, fc.args ?? {});
+                } catch (e: any) {
+                    result = {error: e?.message || String(e)};
+                }
+                responseParts.push({functionResponse: {name: fc.name, response: {result}}});
+            }
+            contents.push({role: 'user', parts: responseParts});
+        }
+
+        // 상한 도달 → 도구 없이 마지막으로 한 번 더 물어서 텍스트 답변을 강제
+        const finalRes = await postWithRetry(url, {systemInstruction, contents, generationConfig}, config);
+        return (finalRes.data.candidates?.[0]?.content?.parts ?? [])
+            .map((p: any) => p.text ?? '')
+            .join('')
+            .trim();
     }
 }
 

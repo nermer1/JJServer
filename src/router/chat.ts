@@ -21,7 +21,7 @@ router.post('/', async (req: express.Request, res: express.Response) => {
             return res.status(400).json({returnErrorMessage: 'question(문자열)이 필요합니다.'});
         }
 
-        const result = await RagChatService.ask(question, {topK, source});
+        const result = await RagChatService.ask(question, {topK, source, meta: {via: 'api'}});
         return res.json({...result, returnMessage: 'ok'});
     } catch (e: any) {
         logger.error(`[chat] 오류: ${e?.message || e}`);
@@ -30,3 +30,4 @@ router.post('/', async (req: express.Request, res: express.Response) => {
 });
 
 export {router};
+

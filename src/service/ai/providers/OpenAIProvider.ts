@@ -6,9 +6,22 @@
  *  - 채팅  : POST /v1/chat/completions
  */
 import axios from 'axios';
-import type {ChatMessage, ChatOptions, ChatProvider, EmbeddingProvider, EmbeddingPurpose} from '../types.js';
+import type {ChatMessage, ChatOptions, ChatProvider, EmbeddingProvider, EmbeddingPurpose, ToolExecutor, ToolFunctionSpec} from '../types.js';
 
 const OPENAI_BASE = 'https://api.openai.com/v1';
+
+/** 함수호출 루프 무한방지 상한 (도구 호출 → 결과 반영 → 재호출 최대 횟수) */
+const MAX_TOOL_STEPS = 5;
+
+/** OpenAI tool_calls 의 arguments 는 JSON 문자열 → 안전 파싱 (깨졌으면 빈 객체) */
+function parseArgs(raw: any): Record<string, any> {
+    if (raw && typeof raw === 'object') return raw;
+    try {
+        return raw ? JSON.parse(raw) : {};
+    } catch {
+        return {};
+    }
+}
 
 export class OpenAIEmbeddingProvider implements EmbeddingProvider {
     public readonly name = 'openai';
@@ -70,5 +83,51 @@ export class OpenAIChatProvider implements ChatProvider {
             }
         );
         return res.data.choices?.[0]?.message?.content ?? '';
+    }
+
+    /**
+     * 함수호출(tool calling) 루프. (OpenAI chat/completions 의 tool_calls / role:'tool' 규격)
+     * 모델이 도구를 부르면 execute()로 실행 → 결과를 role:'tool' 메시지로 되돌리고 다시 호출, content가 나올 때까지 반복.
+     */
+    async chatWithTools(systemText: string, userText: string, tools: ToolFunctionSpec[], execute: ToolExecutor, options: ChatOptions = {}): Promise<string> {
+        const url = `${OPENAI_BASE}/chat/completions`;
+        const config = {headers: {Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json'}, timeout: 60000};
+        const model = options.model || this.model;
+        const toolSpecs = tools.map((t) => ({type: 'function', function: {name: t.name, description: t.description, parameters: t.parameters}}));
+
+        // 대화 누적 (assistant tool_calls / tool 결과 메시지가 쌓임)
+        const messages: any[] = [
+            {role: 'system', content: systemText},
+            {role: 'user', content: userText}
+        ];
+
+        for (let step = 0; step < MAX_TOOL_STEPS; step++) {
+            const res = await axios.post(url, {model, messages, temperature: options.temperature ?? 0.2, max_tokens: options.maxTokens ?? 1024, tools: toolSpecs}, config);
+            const message = res.data.choices?.[0]?.message;
+            const calls: any[] = message?.tool_calls ?? [];
+
+            // 도구 호출이 없으면 = 최종 답변
+            if (calls.length === 0) {
+                return message?.content ?? '';
+            }
+
+            // 모델의 함수호출 턴을 대화에 기록 (원본 message 그대로)
+            messages.push(message);
+
+            // 각 호출 실행 → tool_call_id 로 매칭되는 role:'tool' 메시지로 결과 전달
+            for (const call of calls) {
+                let result: any;
+                try {
+                    result = await execute(call.function?.name, parseArgs(call.function?.arguments));
+                } catch (e: any) {
+                    result = {error: e?.message || String(e)};
+                }
+                messages.push({role: 'tool', tool_call_id: call.id, content: JSON.stringify(result)});
+            }
+        }
+
+        // 상한 도달 → 도구 없이 마지막으로 한 번 더 물어서 텍스트 답변을 강제
+        const finalRes = await axios.post(url, {model, messages, temperature: options.temperature ?? 0.2, max_tokens: options.maxTokens ?? 1024}, config);
+        return finalRes.data.choices?.[0]?.message?.content ?? '';
     }
 }
