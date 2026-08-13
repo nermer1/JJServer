@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js';
+import {AppSettingsSchema, SettingKey, AppSettingMeta} from '../constants/appSettings.js';
 
 class SystemSettingsCacheService {
     private static cache = new Map<string, string>();
@@ -47,6 +48,42 @@ class SystemSettingsCacheService {
             return this.cache.get(key)!;
         }
         return defaultValue || '';
+    }
+
+    /**
+     * 설정 "키"를 받아 값을 조회. DB(캐시) → 환경변수 → 스키마의 기본값 순.
+     * 흩어져 있던 "getSetting(DB→env→fallback)" 로직의 단일 진입점(앱 표준 접근자).
+     * 저수준 get()을 재료로 쓰고, 기본값은 AppSettingsSchema[key] 에서 내부적으로 참조한다.
+     * @param key 설정 키 — 예: AppSettings.CHAT_HISTORY_TURNS ('CHAT_HISTORY_TURNS')
+     */
+    public static resolve(key: SettingKey): string {
+        const fromCache = this.get(key);
+        if (fromCache && fromCache.trim() !== '') return fromCache;
+
+        const fromEnv = process.env[key];
+        if (fromEnv && fromEnv.trim() !== '') return fromEnv;
+
+        return (AppSettingsSchema[key] as AppSettingMeta).default ?? '';
+    }
+
+    /**
+     * 부팅 시 1회 호출: AppSettings 의 required:true 항목이 DB(캐시)/env 어디에도 없으면 예외를 던진다(fail-fast).
+     * → 필수 설정 누락 시 서버가 아예 기동되지 않게 한다. (선택 설정은 검사 안 함 → 없어도 정상 기동)
+     */
+    public static validateRequired(): void {
+        const missing = (Object.keys(AppSettingsSchema) as SettingKey[]).filter((key) => {
+            if (!(AppSettingsSchema[key] as AppSettingMeta).required) return false;
+            const cached = this.get(key);
+            if (cached && cached.trim() !== '') return false;
+            const env = process.env[key];
+            if (env && env.trim() !== '') return false;
+            return true; // DB/env 둘 다 없음 → 누락
+        });
+
+        if (missing.length) {
+            throw new Error(`[CRITICAL] 필수 시스템 설정 누락: ${missing.join(', ')} — 어드민 설정 또는 env 에 등록 필요.`);
+        }
+        logger.info('[SystemSettings] 필수 설정 검증 통과.');
     }
 
     /**

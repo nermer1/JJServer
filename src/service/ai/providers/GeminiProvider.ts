@@ -85,8 +85,12 @@ export class GeminiChatProvider implements ChatProvider {
         const toolConfig = {tools: [{functionDeclarations: tools}]};
         const systemInstruction = {parts: [{text: systemText}]};
 
-        // 대화 누적 (functionCall/functionResponse 가 쌓임)
-        const contents: any[] = [{role: 'user', parts: [{text: userText}]}];
+        // 이전 대화(history)를 먼저 깔고, 그 뒤에 현재 질문 → functionCall/functionResponse 가 쌓임
+        const historyContents = (options.history ?? []).map((m) => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{text: m.content}]
+        }));
+        const contents: any[] = [...historyContents, {role: 'user', parts: [{text: userText}]}];
 
         for (let step = 0; step < MAX_TOOL_STEPS; step++) {
             const res = await postWithRetry(url, {systemInstruction, contents, generationConfig, ...toolConfig}, config);

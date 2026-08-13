@@ -6,6 +6,7 @@ import ApiReturn from '../structure/ApiReturn.js';
 import logger from '../utils/logger.js';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 import {DBLogger} from '../utils/DBLogger.js';
+import {AppSettings} from '../constants/appSettings.js';
 
 class FileController {
     /**
@@ -102,10 +103,7 @@ class FileController {
         const {fileGroupId} = req.params;
 
         try {
-            await Files.updateMany(
-                {fileGroupId, status: { $ne: 'DELETED' }},
-                {$set: {status: 'SAVED'}}
-            );
+            await Files.updateMany({fileGroupId, status: {$ne: 'DELETED'}}, {$set: {status: 'SAVED'}});
 
             apiReturn.setReturnMessage('파일들이 성공적으로 저장 확정되었습니다.');
             res.json(apiReturn);
@@ -129,7 +127,7 @@ class FileController {
                 return;
             }
 
-            const basePath = SystemSettingsCacheService.getRequired('FILE_UPLOAD_PATH');
+            const basePath = SystemSettingsCacheService.getRequired(AppSettings.FILE_UPLOAD_PATH);
             const filePath = path.join(basePath, fileRecord.fileGroupId, fileRecord.savedName);
 
             if (!fs.existsSync(filePath)) {

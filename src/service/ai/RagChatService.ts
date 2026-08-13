@@ -8,6 +8,7 @@ import LLMFactory, {LLMType} from './LLMFactory.js';
 import VectorSearchService, {VectorHit} from './VectorSearchService.js';
 import PromptService from './PromptService.js';
 import {buildToolExecutor, ToolDef} from './RagToolExecutor.js';
+import ChatHistoryService from './ChatHistoryService.js';
 import type {ChatMessage, ToolExecutor, ToolFunctionSpec} from './types.js';
 import {DBLogger} from '../../utils/DBLogger.js';
 
@@ -34,6 +35,8 @@ export interface RagAskOptions {
     embeddingProvider?: LLMType;
     /** 로그용 메타: 누가(user) 어디서(via: 'slack' | 'api' 등) 질문했는지 */
     meta?: {user?: string; via?: string};
+    /** 단기 대화 기억 사용 여부 (기본 true). 슬랙 등 단타성 채널은 false로 꺼서 문맥 없이 1회성 답변. */
+    useMemory?: boolean;
 }
 
 export interface RagSource {
@@ -49,12 +52,17 @@ export interface RagAnswer {
 
 class RagChatService {
     static async ask(question: string, options: RagAskOptions = {}): Promise<RagAnswer> {
-        const embedder = LLMFactory.createEmbedding(options.embeddingProvider);
-        const llm = LLMFactory.createChat(options.chatProvider);
+        const embedder = LLMFactory.createEmbedding();
+        const llm = LLMFactory.createChat();
 
         // 프롬프트 + config(tools/temperature 등)를 랭퓨즈에서 로드 (실패 시 fallback)
         const {text: systemText, config} = await PromptService.getPrompt('rag-system-prompt', FALLBACK_SYSTEM_PROMPT, {});
         const tools: ToolDef[] = Array.isArray(config?.tools) ? config.tools : [];
+
+        // 단기 대화 기억: 켜져 있으면(기본) 이 사용자의 최근 대화(최대 5턴)를 불러와 현재 질문 앞에 붙인다.
+        // 슬랙 등 단타성 채널은 useMemory:false → 기억 로드/저장 모두 건너뜀 (로깅은 그대로).
+        const remember = options.useMemory !== false;
+        const history: ChatMessage[] = remember ? await ChatHistoryService.recent(options.meta?.user) : [];
 
         // ── [경로 A] 함수호출(tool calling) ─────────────────────────────
         // config에 tools가 정의돼 있고 provider가 함수호출을 지원하면,
@@ -73,8 +81,10 @@ class RagChatService {
                 return execute(name, args);
             };
             const answer = await llm.chatWithTools(systemText, question, declarations, trackedExecute, {
-                temperature: config?.temperature
+                temperature: config?.temperature,
+                history // 최근 대화를 현재 질문 앞에 주입 (provider가 처리)
             });
+            if (remember) await ChatHistoryService.save(options.meta?.user, question, answer);
             await this.logQa(question, answer, options.meta, {path: 'tool', tools: calledTools});
             return {answer, sources: []};
         }
@@ -91,10 +101,12 @@ class RagChatService {
 
         const messages: ChatMessage[] = [
             {role: 'system', content: systemText},
+            ...history, // 최근 대화(user/assistant)를 현재 질문 앞에 주입
             {role: 'user', content: `참고 문서:\n${context}\n\n질문: ${question}`}
         ];
         const answer = await llm.chat(messages);
 
+        if (remember) await ChatHistoryService.save(options.meta?.user, question, answer);
         await this.logQa(question, answer, options.meta, {path: 'vector', sources: hits.map((h) => h.source)});
 
         return {
@@ -111,23 +123,27 @@ class RagChatService {
      * 질의응답 로그(DB + 파일). 누가/어디서/무슨 질문/무슨 답변/어느 경로(도구·벡터)인지 기록.
      * 실패해도 답변 흐름을 막지 않도록 내부에서 조용히 흡수한다.
      */
-    private static async logQa(question: string, answer: string, meta: RagAskOptions['meta'], extra: {path: 'tool' | 'vector'; tools?: string[]; sources?: string[]}): Promise<void> {
+    private static async logQa(
+        question: string,
+        answer: string,
+        meta: RagAskOptions['meta'],
+        extra: {path: 'tool' | 'vector'; tools?: string[]; sources?: string[]}
+    ): Promise<void> {
         try {
-            await DBLogger.log({
-                category: 'DATA',
-                action: 'RAG 챗봇 질의응답',
-                actionType: 'READ',
-                target: extra.path === 'tool' ? (extra.tools?.join(',') || '(no-tool)') : 'searchDocs(vector)',
-                userId: meta?.user || meta?.via || 'API',
-                details: {
+            // 챗봇 전용 로거(category='BOT'). userId 는 JWT 유저(없으면 via/'API').
+            await DBLogger.bot(
+                'RAG 챗봇 질의응답',
+                {
                     via: meta?.via,
                     question,
                     answer: (answer || '').slice(0, 2000),
                     path: extra.path,
+                    target: extra.path === 'tool' ? extra.tools?.join(',') || '(no-tool)' : 'searchDocs(vector)',
                     tools: extra.tools,
                     sources: extra.sources
-                }
-            });
+                },
+                meta?.user || meta?.via || 'API'
+            );
         } catch {
             /* 로깅 실패는 무시 (답변엔 영향 없음) */
         }

@@ -13,69 +13,58 @@ import type {ChatProvider, EmbeddingProvider} from './types.js';
 import {OpenAIChatProvider, OpenAIEmbeddingProvider} from './providers/OpenAIProvider.js';
 import {GeminiChatProvider, GeminiEmbeddingProvider} from './providers/GeminiProvider.js';
 import {VertexChatProvider, VertexEmbeddingProvider} from './providers/VertexProvider.js';
+import {AppSettings} from '../../constants/appSettings.js';
 
 export type LLMType = 'openai' | 'gemini' | 'vertex';
 
-/** SystemSettings 우선, 없으면 환경변수에서 조회. 둘 다 없으면 예외 (필수값용) */
-function getSetting(key: string): string {
-    const fromCache = SystemSettingsCacheService.get(key);
-    if (fromCache && fromCache.trim() !== '') return fromCache;
-
-    const fromEnv = process.env[key];
-    if (fromEnv && fromEnv.trim() !== '') return fromEnv;
-
-    throw new Error(`[LLMFactory] 설정값 "${key}" 가 없습니다. (SystemSettings 또는 config/server .env 에 등록 필요)`);
-}
-
-/** getSetting 과 동일하나, 없으면 예외 대신 기본값 반환 (모델명·리전 등 기본값이 있는 값용) */
-function getSettingOr(key: string, fallback: string): string {
-    const fromCache = SystemSettingsCacheService.get(key);
-    if (fromCache && fromCache.trim() !== '') return fromCache;
-
-    const fromEnv = process.env[key];
-    if (fromEnv && fromEnv.trim() !== '') return fromEnv;
-
-    return fallback;
-}
-
 export class LLMFactory {
     /** 답변 생성용 provider 생성 */
-    static createChat(type?: LLMType): ChatProvider {
-        const provider = type || (getSettingOr('CHAT_PROVIDER', 'gemini') as LLMType);
+    static createChat(): ChatProvider {
+        const provider = SystemSettingsCacheService.resolve(AppSettings.CHAT_PROVIDER);
+        let apiKey = '',
+            chatModel = '';
         switch (provider) {
             case 'openai':
-                return new OpenAIChatProvider(getSetting('OPENAI_API_KEY'), getSettingOr('OPENAI_CHAT_MODEL', 'gpt-4o-mini'));
+                apiKey = SystemSettingsCacheService.resolve(AppSettings.OPENAI_API_KEY);
+                chatModel = SystemSettingsCacheService.resolve(AppSettings.OPENAI_CHAT_MODEL);
+                return new OpenAIChatProvider(apiKey, chatModel);
             case 'gemini':
-                return new GeminiChatProvider(getSetting('GEMINI_API_KEY'), getSettingOr('GEMINI_CHAT_MODEL', 'gemini-3.5-flash'));
+                apiKey = SystemSettingsCacheService.resolve(AppSettings.GEMINI_API_KEY);
+                chatModel = SystemSettingsCacheService.resolve(AppSettings.GEMINI_CHAT_MODEL);
+                return new GeminiChatProvider(apiKey, chatModel);
             case 'vertex':
                 // Vertex 인증(OAuth)만 GOOGLE_APPLICATION_CREDENTIALS(env)로 두고,
                 // 나머지 설정값(모델·프로젝트·리전)은 DB(SystemSettings) → env fallback 으로 조회.
-                return new VertexChatProvider(
-                    getSettingOr('VERTEX_CHAT_MODEL', 'gemini-2.5-flash'),
-                    getSetting('VERTEX_PROJECT_ID'),
-                    getSettingOr('VERTEX_LOCATION', 'us-central1')
-                );
+                chatModel = SystemSettingsCacheService.resolve(AppSettings.VERTEX_CHAT_MODEL);
+                const projectId = SystemSettingsCacheService.resolve(AppSettings.VERTEX_PROJECT_ID);
+                const location = SystemSettingsCacheService.resolve(AppSettings.VERTEX_LOCATION);
+                return new VertexChatProvider(chatModel, projectId, location);
             default:
                 throw new Error(`[LLMFactory] 지원하지 않는 chat provider: ${provider}`);
         }
     }
 
     /** 임베딩(검색)용 provider 생성 */
-    static createEmbedding(type?: LLMType): EmbeddingProvider {
-        const provider = type || (getSettingOr('EMBEDDING_PROVIDER', 'gemini') as LLMType);
+    static createEmbedding(): EmbeddingProvider {
+        const provider = SystemSettingsCacheService.resolve(AppSettings.EMBEDDING_PROVIDER);
+        let apiKey = '',
+            embeddingModel = '';
         switch (provider) {
             case 'openai':
-                return new OpenAIEmbeddingProvider(getSetting('OPENAI_API_KEY'), getSettingOr('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-small'));
+                apiKey = SystemSettingsCacheService.resolve(AppSettings.OPENAI_API_KEY);
+                embeddingModel = SystemSettingsCacheService.resolve(AppSettings.OPENAI_EMBEDDING_MODEL);
+                return new OpenAIEmbeddingProvider(apiKey, embeddingModel);
             case 'gemini':
-                return new GeminiEmbeddingProvider(getSetting('GEMINI_API_KEY'), getSettingOr('GEMINI_EMBEDDING_MODEL', 'gemini-embedding-2'));
+                apiKey = SystemSettingsCacheService.resolve(AppSettings.GEMINI_API_KEY);
+                embeddingModel = SystemSettingsCacheService.resolve(AppSettings.GEMINI_EMBEDDING_MODEL);
+                return new GeminiEmbeddingProvider(apiKey, embeddingModel);
             case 'vertex':
                 // Vertex 인증(OAuth)만 GOOGLE_APPLICATION_CREDENTIALS(env)로 두고, 나머지는 DB → env fallback.
-                return new VertexEmbeddingProvider(
-                    getSettingOr('VERTEX_EMBED_MODEL', 'text-multilingual-embedding-002'),
-                    Number(getSettingOr('RAG_EMBED_DIM', '768')),
-                    getSetting('VERTEX_PROJECT_ID'),
-                    getSettingOr('VERTEX_LOCATION', 'us-central1')
-                );
+                const embedDim = Number(SystemSettingsCacheService.resolve(AppSettings.RAG_EMBED_DIM));
+                const projectId = SystemSettingsCacheService.resolve(AppSettings.VERTEX_PROJECT_ID);
+                const location = SystemSettingsCacheService.resolve(AppSettings.VERTEX_LOCATION);
+                embeddingModel = SystemSettingsCacheService.resolve(AppSettings.VERTEX_EMBED_MODEL);
+                return new VertexEmbeddingProvider(embeddingModel, embedDim, projectId, location);
             default:
                 throw new Error(`[LLMFactory] 지원하지 않는 embedding provider: ${provider}`);
         }

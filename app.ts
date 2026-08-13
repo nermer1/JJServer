@@ -128,10 +128,13 @@ httpServer.listen(port, () => {
     HypervSocketService.init(socketServer);
     WebPushService.init();
 
-    // 서버 구동 시 DB에서 시스템 설정(JWT 시크릿 등)을 메모리로 캐싱
-    SystemSettingsCacheService.loadSettings().catch((err) => {
-        console.error('SystemSettings 초기 로드 실패:', err);
-    });
+    // 서버 구동 시 DB에서 시스템 설정(JWT 시크릿 등)을 메모리로 캐싱 → 필수 설정 검증(fail-fast)
+    SystemSettingsCacheService.loadSettings()
+        .then(() => SystemSettingsCacheService.validateRequired())
+        .catch((err) => {
+            console.error('SystemSettings 초기화 실패 (필수 설정 확인):', err?.message || err);
+            process.exit(1); // 필수 설정 누락 → 서버 기동 중단
+        });
 });
 httpServer.on('close', () => {
     logger.info('server down');

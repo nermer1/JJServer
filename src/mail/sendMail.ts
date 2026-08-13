@@ -4,14 +4,15 @@ import {basicProperty} from '../properties/ServerProperty.js';
 import logger from '../utils/logger.js';
 
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
+import {AppSettings} from '../constants/appSettings.js';
 
 let _transporter: nodemailer.Transporter | null = null;
 
 const getTransporter = () => {
     if (!_transporter) {
         _transporter = nodemailer.createTransport({
-            host: SystemSettingsCacheService.getRequired('SMTP_HOST'),
-            port: Number(SystemSettingsCacheService.getRequired('SMTP_PORT')),
+            host: SystemSettingsCacheService.getRequired(AppSettings.SMTP_HOST),
+            port: Number(SystemSettingsCacheService.getRequired(AppSettings.SMTP_PORT)),
             secure: false
             /* auth: {
                 user: SystemSettingsCacheService.getRequired('SMTP_USER'),

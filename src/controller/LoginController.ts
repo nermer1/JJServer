@@ -10,12 +10,13 @@ import axios from 'axios';
 import PermissionCacheService from '../service/PermissionCacheService.js';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 import {DBLogger} from '../utils/DBLogger.js';
+import {AppSettings} from '../constants/appSettings.js';
 
 // 테스트 중
 
 class LoginController {
     private async issueTokensForUser(email: string, apiReturn: ApiReturn, res: Response, issueRefresh: boolean = true): Promise<boolean> {
-        const secretKey = SystemSettingsCacheService.getRequired('JWT_SECRET');
+        const secretKey = SystemSettingsCacheService.getRequired(AppSettings.JWT_SECRET);
 
         const userDoc = await Users.model
             .findOne({email})
@@ -129,7 +130,7 @@ class LoginController {
             return;
         }
 
-        const secretKey = SystemSettingsCacheService.getRequired('JWT_SECRET');
+        const secretKey = SystemSettingsCacheService.getRequired(AppSettings.JWT_SECRET);
 
         let decoded;
         try {

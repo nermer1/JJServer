@@ -82,7 +82,8 @@ class AuditLogSchema extends CommonSchema {
                 logs.forEach((log: any) => {
                     let matchedUser = null;
 
-                    if (log.category === 'SLACK' && log.userId && log.userId.startsWith('U')) {
+                    // SLACK/BOT 로그는 userId가 슬랙 U-아이디로 저장됨 → 표시 시 이메일로 변환 (슬랙 command 로그와 동일 처리)
+                    if ((log.category === 'SLACK' || log.category === 'BOT') && log.userId && log.userId.startsWith('U')) {
                         matchedUser = userMapBySlackId[log.userId];
                         if (matchedUser) {
                             log.userId = matchedUser.email;
@@ -116,7 +117,7 @@ const auditLogSchemaDefinition = new Schema(
         category: {
             type: String,
             required: true,
-            enum: ['SLACK', 'SYNC', 'USER', 'SYSTEM', 'OTHER', 'DATA', 'FILE'],
+            enum: ['SLACK', 'SYNC', 'USER', 'SYSTEM', 'OTHER', 'DATA', 'FILE', 'BOT'],
             description: '로그 대분류'
         },
         action: {

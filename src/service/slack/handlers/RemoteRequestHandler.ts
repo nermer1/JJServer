@@ -10,7 +10,7 @@ import {SlackActionHelper} from '../SlackActionHelper.js';
 
 export class RemoteRequestHandler {
     static async handleApproveAction(payload: any, value: string, responseUrl: string, slackClient: SlackMessenger) {
-        if (await SlackActionHelper.isActionExpired(payload, responseUrl, 60)) {
+        if (await SlackActionHelper.isActionExpired(payload, responseUrl, 180)) {
             return;
         }
 

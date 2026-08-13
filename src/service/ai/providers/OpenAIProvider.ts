@@ -95,9 +95,11 @@ export class OpenAIChatProvider implements ChatProvider {
         const model = options.model || this.model;
         const toolSpecs = tools.map((t) => ({type: 'function', function: {name: t.name, description: t.description, parameters: t.parameters}}));
 
-        // 대화 누적 (assistant tool_calls / tool 결과 메시지가 쌓임)
+        // system → 이전 대화(history) → 현재 질문 순으로 깔고, 이후 tool_calls/tool 결과가 쌓임
+        const historyMsgs = (options.history ?? []).map((m) => ({role: m.role, content: m.content}));
         const messages: any[] = [
             {role: 'system', content: systemText},
+            ...historyMsgs,
             {role: 'user', content: userText}
         ];
 

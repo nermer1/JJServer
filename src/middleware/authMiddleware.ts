@@ -5,6 +5,7 @@ import {ApiKeys} from '../schemas/apiKeys.js';
 import PermissionCacheService from '../service/PermissionCacheService.js';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 import redisTest from '../db/RedisTest.js';
+import {AppSettings} from '../constants/appSettings.js';
 
 // 제외할 라우트 목록 (인증 없이 접근 가능)
 // /auth 라우터로 묶여있어 req.path가 /auth/login 또는 /auth/refresh로 들어옵니다.
@@ -72,7 +73,7 @@ export const verifyApiToken = async (req: Request, res: Response, next: NextFunc
 
     // 3. JWT 검증 (Option B)
     // DB의 SystemSettings에서 캐싱된 동적 시크릿 키를 우선 가져옵니다.
-    const jwtSecret = SystemSettingsCacheService.getRequired('JWT_SECRET');
+    const jwtSecret = SystemSettingsCacheService.getRequired(AppSettings.JWT_SECRET);
 
     try {
         const decoded = jwt.verify(token, jwtSecret) as any;

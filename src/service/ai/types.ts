@@ -19,6 +19,11 @@ export interface ChatOptions {
     maxTokens?: number;
     /** provider 기본 모델을 이번 호출만 덮어쓰고 싶을 때 */
     model?: string;
+    /**
+     * 단기 대화 기억(multi-turn). 현재 질문 "앞에" 끼워넣을 이전 대화(user/assistant 번갈아).
+     * chatWithTools 처럼 단일 질문만 받는 메서드에서 문맥을 잇기 위해 사용.
+     */
+    history?: ChatMessage[];
 }
 
 /**

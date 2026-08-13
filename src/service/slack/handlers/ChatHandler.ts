@@ -29,7 +29,8 @@ export class ChatHandler {
         }
 
         try {
-            const result = await RagChatService.ask(question, {topK: 5, meta: {user: user_id, via: 'slack'}});
+            // 슬랙은 단타성(1회성)이라 대화 기억은 끔(useMemory:false). 로깅(누가/무엇)은 그대로 남음.
+            const result = await RagChatService.ask(question, {topK: 5, meta: {user: user_id, via: 'slack'}, useMemory: false});
 
             await apiClient.post(response_url, {
                 // 나만 보기: 'ephemeral' / 채널 전체 공유: 'in_channel'

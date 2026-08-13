@@ -5,6 +5,7 @@ import {Request, Response, NextFunction} from 'express';
 import crypto from 'crypto';
 import SystemSettingsCacheService from '../service/SystemSettingsCacheService.js';
 import logger from '../utils/logger.js';
+import {AppSettings} from '../constants/appSettings.js';
 
 // Multer 스토리지 설정
 const storage = multer.diskStorage({
@@ -62,8 +63,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
 export const upload = {
     single: (fieldName: string) => {
         return (req: Request, res: Response, next: NextFunction) => {
-            // DB 설정에서 파일 사이즈 제한 로드 (기본값 10MB)
-            const sizeLimitMbStr = SystemSettingsCacheService.get('MAX_UPLOAD_FILE_SIZE_MB', '10');
+            const sizeLimitMbStr = SystemSettingsCacheService.resolve(AppSettings.MAX_UPLOAD_FILE_SIZE_MB);
             const sizeLimitMb = parseInt(sizeLimitMbStr, 10);
             const sizeLimitBytes = (isNaN(sizeLimitMb) ? 10 : sizeLimitMb) * 1024 * 1024 - 1;
 

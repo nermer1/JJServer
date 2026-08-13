@@ -4,9 +4,8 @@
  * 이미 연결된 mongoose 커넥션을 그대로 사용한다. ($vectorSearch aggregation)
  */
 import mongoose from 'mongoose';
-
-const TARGET_COLLECTION = process.env.RAG_COLLECTION || 'rag_vectors';
-const INDEX_NAME = process.env.RAG_INDEX || 'rag_vector_index';
+import {AppSettings} from '../../constants/appSettings.js';
+import SystemSettingsCacheService from '../SystemSettingsCacheService.js';
 
 export interface VectorHit {
     source: string;
@@ -25,12 +24,16 @@ class VectorSearchService {
     static async search(queryVector: number[], options: VectorSearchOptions = {}): Promise<VectorHit[]> {
         const topK = options.topK ?? 5;
 
+        // ⚠️ 설정은 "호출 시점"에 읽는다. 모듈 로드 시점엔 loadSettings() 전이라 기본값으로 굳어버리기 때문.
+        const targetCollection = SystemSettingsCacheService.resolve(AppSettings.RAG_COLLECTION);
+        const indexName = SystemSettingsCacheService.resolve(AppSettings.RAG_INDEX);
+
         // mongoose 커넥션의 native db 핸들 (앱 부팅 시 connect 되어 있음)
         const db: any = mongoose.connection.db;
         if (!db) throw new Error('[VectorSearchService] MongoDB 연결이 아직 준비되지 않았습니다.');
 
         const vectorStage: any = {
-            index: INDEX_NAME,
+            index: indexName,
             path: 'embedding',
             queryVector,
             numCandidates: Math.max(100, topK * 20),
@@ -39,11 +42,8 @@ class VectorSearchService {
         if (options.source) vectorStage.filter = {source: options.source};
 
         const rows: any[] = await db
-            .collection(TARGET_COLLECTION)
-            .aggregate([
-                {$vectorSearch: vectorStage},
-                {$project: {_id: 0, source: 1, text: 1, metadata: 1, score: {$meta: 'vectorSearchScore'}}}
-            ])
+            .collection(targetCollection)
+            .aggregate([{$vectorSearch: vectorStage}, {$project: {_id: 0, source: 1, text: 1, metadata: 1, score: {$meta: 'vectorSearchScore'}}}])
             .toArray();
 
         return rows as VectorHit[];
@@ -51,3 +51,4 @@ class VectorSearchService {
 }
 
 export default VectorSearchService;
+

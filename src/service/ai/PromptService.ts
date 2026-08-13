@@ -21,17 +21,7 @@
 import axios from 'axios';
 import SystemSettingsCacheService from '../SystemSettingsCacheService.js';
 import logger from '../../utils/logger.js';
-
-/** SystemSettings(DB) 우선 → env → 기본값 */
-function getSetting(key: string, fallback = ''): string {
-    const fromCache = SystemSettingsCacheService.get(key);
-    if (fromCache && fromCache.trim() !== '') return fromCache;
-
-    const fromEnv = process.env[key];
-    if (fromEnv && fromEnv.trim() !== '') return fromEnv;
-
-    return fallback;
-}
+import {AppSettings} from '../../constants/appSettings.js';
 
 /** {{variable}} 형태를 vars 값으로 치환. 값이 없는 변수는 그대로 둔다. */
 function compile(template: string, vars: Record<string, string>): string {
@@ -57,8 +47,9 @@ class PromptService {
      * @param fallbackConfig 랭퓨즈/캐시 모두 불가할 때 쓸 config
      */
     public static async getPrompt(name: string, fallbackText: string, fallbackConfig: Record<string, any> = {}): Promise<LangfusePrompt> {
-        const ttlMs = Number(getSetting('LANGFUSE_PROMPT_CACHE_TTL', '60')) * 1000;
-        const label = getSetting('LANGFUSE_PROMPT_LABEL', 'production');
+        const cacheTtl = Number(SystemSettingsCacheService.resolve(AppSettings.LANGFUSE_PROMPT_CACHE_TTL));
+        const ttlMs = cacheTtl * 1000;
+        const label = SystemSettingsCacheService.resolve(AppSettings.LANGFUSE_PROMPT_LABEL);
         const cacheKey = `${name}@${label}`;
         const now = Date.now();
         const cached = this.cache.get(cacheKey);
@@ -91,9 +82,9 @@ class PromptService {
 
     /** self-host 랭퓨즈 public API 호출: GET /api/public/v2/prompts/{name}?label=... (Basic auth) */
     private static async fetchFromLangfuse(name: string, label: string): Promise<LangfusePrompt> {
-        const host = getSetting('LANGFUSE_HOST');
-        const publicKey = getSetting('LANGFUSE_PUBLIC_KEY');
-        const secretKey = getSetting('LANGFUSE_SECRET_KEY');
+        const host = SystemSettingsCacheService.resolve(AppSettings.LANGFUSE_HOST);
+        const publicKey = SystemSettingsCacheService.resolve(AppSettings.LANGFUSE_PUBLIC_KEY);
+        const secretKey = SystemSettingsCacheService.resolve(AppSettings.LANGFUSE_SECRET_KEY);
         if (!host || !publicKey || !secretKey) {
             throw new Error('LANGFUSE_HOST / LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY 미설정');
         }

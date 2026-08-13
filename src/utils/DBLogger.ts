@@ -2,7 +2,7 @@ import logger from './logger.js';
 import {AuditLog} from '../schemas/auditLog.js';
 
 interface AuditLogTemplate {
-    category: 'SLACK' | 'SYNC' | 'USER' | 'SYSTEM' | 'OTHER' | 'DATA' | 'FILE';
+    category: 'SLACK' | 'SYNC' | 'USER' | 'SYSTEM' | 'OTHER' | 'DATA' | 'FILE' | 'BOT';
     action: string;
     target?: string;
     actionType?: 'CREATE' | 'READ' | 'UPDATE' | 'DELETE' | 'EXECUTE' | 'LOGIN' | 'LOGOUT' | string;
@@ -44,5 +44,13 @@ export class DBLogger {
     public static async slack(action: string, details?: any, userId?: string, status: 'SUCCESS' | 'FAIL' | 'PENDING' = 'SUCCESS'): Promise<void> {
         const uid = userId || (details && details.user_id) || 'SYSTEM';
         return this.log({category: 'SLACK', action, details, userId: uid, status});
+    }
+
+    /**
+     * [편의 메서드] 챗봇 관련 전용 로거
+     */
+    public static async bot(action: string, details?: any, userId?: string, status: 'SUCCESS' | 'FAIL' | 'PENDING' = 'SUCCESS'): Promise<void> {
+        const uid = userId || (details && details.user_id) || 'SYSTEM';
+        return this.log({category: 'BOT', action, details, userId: uid, status});
     }
 }
