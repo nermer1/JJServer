@@ -39,8 +39,9 @@ class AuditLogSchema extends CommonSchema {
         // 키워드 검색 (action 내용 또는 userId에 대한 부분 일치 검색)
         if (option.keyword) {
             filter.$or = [
-                { action: { $regex: option.keyword, $options: 'i' } },
-                { userId: { $regex: option.keyword, $options: 'i' } }
+                {action: {$regex: option.keyword, $options: 'i'}},
+                {userId: {$regex: option.keyword, $options: 'i'}},
+                {name: {$regex: option.keyword, $options: 'i'}}
             ];
         }
 
@@ -48,8 +49,9 @@ class AuditLogSchema extends CommonSchema {
         const totalCount = await this.model.countDocuments(filter);
 
         // 4. 페이징 및 필터가 적용된 최신 로그 데이터 조회
-        let logs = await this.model.find(filter)
-            .sort({ createdAt: -1 }) // 최신순 정렬
+        let logs = await this.model
+            .find(filter)
+            .sort({createdAt: -1}) // 최신순 정렬
             .skip(skip)
             .limit(limit)
             .lean(); // toObject() 불필요, 순수 JS 객체 반환으로 속도 향상
@@ -161,4 +163,3 @@ const auditLogSchemaDefinition = new Schema(
 const AuditLog = new AuditLogSchema('auditLog', auditLogSchemaDefinition);
 
 export {AuditLog};
-

@@ -76,11 +76,34 @@ export default class CommonSchema {
         return apiReturn;
     }
 
+    /**
+     * params.projection 규약 (findAll 오버라이드 공통 규칙)
+     * ─────────────────────────────────────────────────────
+     * 1) 조인이 없는 findAll (기본형): find()의 projection 인자로 그대로 넘긴다
+     *      projection = { 필드명: 0 }
+     *      예) { password: 0 }
+     *
+     * 2) aggregate 조인형 findAll (오버라이드형): 파이프라인 스테이지 이름을 키로 두고
+     *    해당 스테이지 오브젝트에 그대로 병합(...)한다.
+     *      projection = { <스테이지명>: { ... }, ... }
+     *      - lookup  : $lookup 오브젝트에 병합 (예: { pipeline: [{ $project: { secret: 0 } }] })
+     *      - project : 최종 $project 스테이지에 병합 (예: { 'etc.info.data.tables': 0 })
+     *      각 오버라이드는 자기가 노출하는 스테이지 키를 메서드 위에 문서화한다.
+     *
+     * 3) 새로운 조인 패턴이 생기면 그 findAll에서 스테이지 키를 추가한다 (이 규약 자체는 불변).
+     *
+     * 공통 제약:
+     *   - project 스테이지는 제외 모드(0)만 사용. 한 $project 안에서 0과 1을 섞지 않는다.
+     *   - populate/lookup 연결 키(department_ids 등)는 숨기지 않는다 (숨기면 조인이 깨짐).
+     *   - projection을 안 넘기면 전체 필드를 반환한다 (기존 호출부 하위호환).
+     */
     async findAll(params: DBParamsType) {
         params = params || {};
         const option = params.option || {};
+        // 조인 없는 기본형: projection을 그 컬렉션 필드에 그대로 적용
+        const projection = params.projection || {};
         const apiReturn = new ApiReturn();
-        const returnData = await this.model.find(option);
+        const returnData = await this.model.find(option, projection);
 
         apiReturn.setTableData(returnData);
         apiReturn.setReturnMessage('조회 성공');

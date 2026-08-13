@@ -23,6 +23,7 @@ interface DBParamsType {
     name?: string;
     type?: string;
     option?: any;
+    projection?: any;
     data: DBDataType;
 }
 

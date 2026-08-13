@@ -9,6 +9,9 @@ class otpService {
             name: 'customerList',
             type: 'R',
             option: {code: {$in: customers}},
+            projection: {
+                lookup: {pipeline: [{$project: {'info.data.history': 0, 'info.data.tables': 0}}]}
+            },
             data: {
                 tableData: []
             }

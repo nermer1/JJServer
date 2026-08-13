@@ -220,9 +220,22 @@ class CustomerSchema extends CommonSchema {
         return apiReturn;
     }
 
+    /**
+     * customer + customerEtc 조인형 findAll.
+     * projection 규약(CommonSchema.findAll 주석 참고): aggregate 스테이지에 직접 주입한다.
+     * 지원 키:
+     *   - projection.lookup  : $lookup 오브젝트에 병합
+     *       예) { pipeline: [{ $project: { 'otp.secret': 0 } }] }  // customerEtc를 꺼내올 때 제외
+     *   - projection.project : 최종 $project 스테이지에 병합 (제외 모드 0)
+     *       예) { 'etc.info.data.tables': 0 }                      // 병합 결과에서 제외
+     * 안 넘기면 전체 필드를 반환한다.
+     */
     async findAll(params: DBParamsType) {
         params = params || {};
         const option = params.option || {};
+        const projection = params.projection || {};
+        const lookupProjection = projection.lookup || {}; // $lookup 오브젝트에 병합
+        const projectProjection = projection.project || {}; // 최종 $project 스테이지에 병합
         const apiReturn = new ApiReturn();
 
         const returnData = await this.model.aggregate([
@@ -234,7 +247,8 @@ class CustomerSchema extends CommonSchema {
                     from: 'customerEtc',
                     localField: '_id',
                     foreignField: '_id',
-                    as: 'customerEtc'
+                    as: 'customerEtc',
+                    ...lookupProjection
                 }
             },
             {
@@ -249,7 +263,7 @@ class CustomerSchema extends CommonSchema {
                 }
             },
             {
-                $project: {'etc._id': 0, customerEtc: 0}
+                $project: {'etc._id': 0, customerEtc: 0, ...projectProjection}
             }
         ]);
 
