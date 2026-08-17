@@ -19,7 +19,7 @@
  *
  * ⚠️ query 블록은 LLM에게 넘기지 않는다(서버 내부 실행 정보). LLM에는 name/description/parameters 만 전달.
  */
-import mongoose from 'mongoose';
+import MongoDB from '../../db/MongoDB.js';
 import VectorSearchService from './VectorSearchService.js';
 import logger from '../../utils/logger.js';
 import type {EmbeddingProvider, ToolExecutor} from './types.js';
@@ -104,8 +104,7 @@ export function buildToolExecutor(tools: ToolDef[], embedder: EmbeddingProvider)
         if (!spec || !spec.query) return {error: `알 수 없는 도구: ${name}`};
 
         const q = spec.query;
-        const db: any = mongoose.connection.db;
-        if (!db) return {error: 'MongoDB 연결이 준비되지 않았습니다.'};
+        const db = MongoDB.getDb();
 
         // 1) 벡터 검색 도구
         if (q.type === 'vector') {

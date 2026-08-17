@@ -1,26 +1,21 @@
 import {Request, Response} from 'express';
-import {schemas} from '../../../schemas/schemaMap.js';
 import StringUtils from '../../../utils/StringUtils.js';
 import otpService from '../../OtpService.js';
 import {OtpBlocks} from '../blocks/OtpBlocks.js';
 import {SlackMessenger} from '../../../messenger/slack/SlackMessenger.js';
-import { apiClient } from '../../../modules/httpClient/ApiClient.js';
+import {apiClient} from '../../../modules/httpClient/ApiClient.js';
+import MongoDB from '../../../db/MongoDB.js';
 
 export class OtpHandler {
     static async handleOtpCommand(req: Request, res: Response) {
-        const params: any = {
-            type: 'R',
-            data: {
-                tableData: []
-            }
-        };
-
+        const db = MongoDB.getDb();
+        const data = await db
+            .collection('customer')
+            .find({}, {projection: {code: 1, text: 1, _id: 0}})
+            .toArray();
         const {text, response_url} = req.body;
-        const schema = schemas.customerList;
-        const data = await schema.getOptList(params);
-        const tableData = data.getTableData();
-        const results: any[] = StringUtils.fuzzySearch(tableData, text, {keys: ['customer.code', 'customer.text']});
-        const codeArr = results.map((item: any) => item.customer.code);
+        const results: any[] = StringUtils.fuzzySearch(data, text, {keys: ['code', 'text']});
+        const codeArr = results.map((item: any) => item.code);
         const otpList = await otpService.getList(codeArr);
 
         await apiClient.post(response_url, {

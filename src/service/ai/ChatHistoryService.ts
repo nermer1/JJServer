@@ -10,7 +10,7 @@
  * 저장 단위: { user, question, answer, ts } 한 턴 = 문서 하나.
  * 조회: user로 최근 N턴 → user/assistant 메시지 배열로 펼쳐 반환.
  */
-import mongoose from 'mongoose';
+import MongoDB from '../../db/MongoDB.js';
 import type {ChatMessage} from './types.js';
 import logger from '../../utils/logger.js';
 import SystemSettingsCacheService from '../SystemSettingsCacheService.js';
@@ -31,10 +31,9 @@ class ChatHistoryService {
     /** user의 최근 N턴을 시간순(오래된→최신) ChatMessage[] 로 반환. turns 미지정 시 DB 설정값 사용. user 없으면 빈 배열. */
     static async recent(user?: string, turns = resolveTurns()): Promise<ChatMessage[]> {
         if (!user) return [];
-        const db: any = mongoose.connection.db;
-        if (!db) return [];
 
         try {
+            const db = MongoDB.getDb();
             const rows = await db.collection(COLLECTION).find({user}).sort({ts: -1}).limit(turns).toArray();
             rows.reverse(); // 최신순으로 가져와서 → 시간순으로 뒤집기
 
@@ -57,10 +56,9 @@ class ChatHistoryService {
      */
     static async list(user?: string, limit = 200): Promise<Array<{question: string; answer: string; ts: Date}>> {
         if (!user) return [];
-        const db: any = mongoose.connection.db;
-        if (!db) return [];
 
         try {
+            const db = MongoDB.getDb();
             const rows = await db.collection(COLLECTION).find({user}).sort({ts: 1}).limit(limit).toArray();
             return rows.map((r: any) => ({question: r.question, answer: r.answer, ts: r.ts}));
         } catch (e: any) {
@@ -72,10 +70,9 @@ class ChatHistoryService {
     /** 그 사용자의 대화 이력 전체 삭제 ("새 대화" 시작용). 삭제된 건수 반환. */
     static async clear(user?: string): Promise<number> {
         if (!user) return 0;
-        const db: any = mongoose.connection.db;
-        if (!db) return 0;
 
         try {
+            const db = MongoDB.getDb();
             const res = await db.collection(COLLECTION).deleteMany({user});
             return res.deletedCount ?? 0;
         } catch (e: any) {
@@ -87,10 +84,9 @@ class ChatHistoryService {
     /** 대화 한 턴 저장. user 없으면(익명) 저장 생략. 실패해도 흐름 안 막음. */
     static async save(user: string | undefined, question: string, answer: string): Promise<void> {
         if (!user) return;
-        const db: any = mongoose.connection.db;
-        if (!db) return;
 
         try {
+            const db = MongoDB.getDb();
             await db.collection(COLLECTION).insertOne({user, question, answer, ts: new Date()});
         } catch (e: any) {
             logger.warn(`[ChatHistory] 대화 이력 저장 실패(${user}): ${e?.message || e}`);

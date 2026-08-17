@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------
  * 이미 연결된 mongoose 커넥션을 그대로 사용한다. ($vectorSearch aggregation)
  */
-import mongoose from 'mongoose';
+import MongoDB from '../../db/MongoDB.js';
 import {AppSettings} from '../../constants/appSettings.js';
 import SystemSettingsCacheService from '../SystemSettingsCacheService.js';
 
@@ -28,9 +28,7 @@ class VectorSearchService {
         const targetCollection = SystemSettingsCacheService.resolve(AppSettings.RAG_COLLECTION);
         const indexName = SystemSettingsCacheService.resolve(AppSettings.RAG_INDEX);
 
-        // mongoose 커넥션의 native db 핸들 (앱 부팅 시 connect 되어 있음)
-        const db: any = mongoose.connection.db;
-        if (!db) throw new Error('[VectorSearchService] MongoDB 연결이 아직 준비되지 않았습니다.');
+        const db = MongoDB.getDb();
 
         const vectorStage: any = {
             index: indexName,

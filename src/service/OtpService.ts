@@ -1,30 +1,21 @@
 import {authenticator} from 'otplib';
 import ApiReturn from '../structure/ApiReturn.js';
-import {schemas} from '../schemas/schemaMap.js';
+import MongoDB from '../db/MongoDB.js';
 
 class otpService {
     public async getList(customers: string[]) {
         const apiReturn = new ApiReturn();
-        const params: DBParamsType = {
-            name: 'customerList',
-            type: 'R',
+        const params = {
+            name: 'customerEtc',
             option: {code: {$in: customers}},
-            projection: {
-                lookup: {pipeline: [{$project: {'info.data.history': 0, 'info.data.tables': 0}}]}
-            },
-            data: {
-                tableData: []
-            }
+            projection: {code: 1, otp: 1, _id: 0}
         };
 
         try {
-            const schema = schemas.customerList;
-            const otpListData = await schema.getOptList(params);
-            const tableData = otpListData.getTableData();
-
-            const groupedData = tableData.reduce((acc, item) => {
+            const data = (await this.getOptList(params)).getTableData();
+            const groupedData = data.reduce((acc, item) => {
                 const customerCode = item.customer.code;
-                const otpDetails = item.otp.map(({secret, user, mobile}: any) => ({
+                const otpDetails = item.otp.map(({secret, user, mobile}: ObjAny) => ({
                     user,
                     mobile,
                     otp: authenticator.generate(secret)
@@ -43,6 +34,29 @@ class otpService {
         } catch (e) {
             apiReturn.setReturnErrorMessage(e as string);
         }
+        return apiReturn;
+    }
+
+    private async getOptList(params: ObjAny): Promise<ApiReturn> {
+        const apiReturn = new ApiReturn();
+        const db = MongoDB.getDb();
+        const customerData = await db.collection(params.name).find(params.option, {projection: params.projection}).toArray();
+        const returnData = customerData.reduce<ObjAny>((arr, data) => {
+            const otpArr = data.otp;
+            const googleOtps = otpArr.filter((otps: any) => otps.type === 'google');
+            if (googleOtps.length > 0) {
+                arr.push({
+                    otp: googleOtps,
+                    customer: {
+                        code: data.code
+                    }
+                });
+            }
+            return arr;
+        }, []);
+
+        apiReturn.setTableData(returnData);
+        apiReturn.setReturnMessage('조회 성공');
         return apiReturn;
     }
 }

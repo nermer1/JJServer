@@ -9,6 +9,7 @@ import VectorSearchService, {VectorHit} from './VectorSearchService.js';
 import PromptService from './PromptService.js';
 import {buildToolExecutor, ToolDef} from './RagToolExecutor.js';
 import ChatHistoryService from './ChatHistoryService.js';
+import {traceChat} from './LangfuseTracer.js';
 import type {ChatMessage, ToolExecutor, ToolFunctionSpec} from './types.js';
 import {DBLogger} from '../../utils/DBLogger.js';
 
@@ -56,7 +57,7 @@ class RagChatService {
         const llm = LLMFactory.createChat();
 
         // 프롬프트 + config(tools/temperature 등)를 랭퓨즈에서 로드 (실패 시 fallback)
-        const {text: systemText, config} = await PromptService.getPrompt('rag-system-prompt', FALLBACK_SYSTEM_PROMPT, {});
+        const {text: systemText, config, promptObj} = await PromptService.getPrompt('rag-system-prompt', FALLBACK_SYSTEM_PROMPT, {});
         const tools: ToolDef[] = Array.isArray(config?.tools) ? config.tools : [];
 
         // 단기 대화 기억: 켜져 있으면(기본) 이 사용자의 최근 대화(최대 5턴)를 불러와 현재 질문 앞에 붙인다.
@@ -74,18 +75,20 @@ class RagChatService {
                 parameters: t.parameters
             }));
             const execute = buildToolExecutor(tools, embedder);
-            // 어떤 도구가 호출됐는지 로그용으로 기록 (실행은 그대로 위임)
-            const calledTools: string[] = [];
-            const trackedExecute: ToolExecutor = (name, args) => {
-                calledTools.push(name);
-                return execute(name, args);
+            // 어떤 도구를 무슨 인자로 불러 무엇이 나왔는지 기록 (로그 + 랭퓨즈 trace 진단용)
+            const toolCalls: Array<{name: string; args: any; result: any}> = [];
+            const trackedExecute: ToolExecutor = async (name, args) => {
+                const result = await execute(name, args);
+                toolCalls.push({name, args, result});
+                return result;
             };
             const answer = await llm.chatWithTools(systemText, question, declarations, trackedExecute, {
                 temperature: config?.temperature,
                 history // 최근 대화를 현재 질문 앞에 주입 (provider가 처리)
             });
             if (remember) await ChatHistoryService.save(options.meta?.user, question, answer);
-            await this.logQa(question, answer, options.meta, {path: 'tool', tools: calledTools});
+            await this.logQa(question, answer, options.meta, {path: 'tool', tools: toolCalls.map((t) => t.name)});
+            traceChat({question, answer, user: options.meta?.user, via: options.meta?.via, path: 'tool', model: llm.name, toolCalls, promptObj});
             return {answer, sources: []};
         }
 
@@ -108,6 +111,7 @@ class RagChatService {
 
         if (remember) await ChatHistoryService.save(options.meta?.user, question, answer);
         await this.logQa(question, answer, options.meta, {path: 'vector', sources: hits.map((h) => h.source)});
+        traceChat({question, answer, user: options.meta?.user, via: options.meta?.via, path: 'vector', model: llm.name, sources: hits.map((h) => h.source), promptObj});
 
         return {
             answer,

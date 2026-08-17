@@ -196,30 +196,6 @@ class CustomerSchema extends CommonSchema {
         return apiReturn;
     }
 
-    async getOptList(params: DBParamsType): Promise<ApiReturn> {
-        const apiReturn = new ApiReturn();
-        const customerData = (await this.findAll(params)).getTableData();
-
-        const returnData = customerData.reduce<ObjAny>((arr, data) => {
-            const otpArr = data.etc.otp;
-            const googleOtps = otpArr.filter((otps: any) => otps.type === 'google');
-            if (googleOtps.length > 0) {
-                arr.push({
-                    otp: googleOtps,
-                    customer: {
-                        code: data.code,
-                        text: data.text
-                    }
-                });
-            }
-            return arr;
-        }, []);
-
-        apiReturn.setTableData(returnData);
-        apiReturn.setReturnMessage('조회 성공');
-        return apiReturn;
-    }
-
     /**
      * customer + customerEtc 조인형 findAll.
      * projection 규약(CommonSchema.findAll 주석 참고): aggregate 스테이지에 직접 주입한다.
