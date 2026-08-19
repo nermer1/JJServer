@@ -73,6 +73,9 @@ export class SlackRouter {
                 case 'share_otp':
                     await OtpHandler.handleShareAction(payload, value, this.slackClient);
                     break;
+                case 'share_chat':
+                    await ChatHandler.handleShareAction(payload, value, response_url);
+                    break;
                 case 'post':
                     await WikiHandler.handlePostAction(payload, value, response_url);
                     break;

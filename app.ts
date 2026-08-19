@@ -121,21 +121,25 @@ scheduleManger.init();
 
 const port = basicProperty.server.port;
 
-httpServer.listen(port, () => {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    logger.info('Server starting...');
-    logger.info(`Listening on port ${port}`);
-    HypervSocketService.init(socketServer);
-    WebPushService.init();
-
-    // 서버 구동 시 DB에서 시스템 설정(JWT 시크릿 등)을 메모리로 캐싱 → 필수 설정 검증(fail-fast)
-    SystemSettingsCacheService.loadSettings()
-        .then(() => SystemSettingsCacheService.validateRequired())
-        .catch((err) => {
-            console.error('SystemSettings 초기화 실패 (필수 설정 확인):', err?.message || err);
-            process.exit(1); // 필수 설정 누락 → 서버 기동 중단
+// ⚠️ 요청을 받기 "전"에 시스템 설정(JWT 시크릿 등)을 먼저 캐싱·검증한다.
+// listen()을 먼저 열면 캐시 적재 완료 전 찰나에 들어온 요청이 getRequired(JWT_SECRET)에서 터진다(부팅 레이스
+// = 재시작 직후 최초 1회 500). → 캐시가 다 찬 뒤에야 포트를 열어 그 창(window) 자체를 없앤다.
+// (loadSettings의 find()는 mongoose 커맨드 버퍼링 덕에 DB 연결이 끝날 때까지 대기 후 적재된다.)
+SystemSettingsCacheService.loadSettings()
+    .then(() => SystemSettingsCacheService.validateRequired())
+    .then(() => {
+        httpServer.listen(port, () => {
+            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+            logger.info('Server starting...');
+            logger.info(`Listening on port ${port}`);
+            HypervSocketService.init(socketServer);
+            WebPushService.init();
         });
-});
+    })
+    .catch((err) => {
+        console.error('SystemSettings 초기화 실패 (필수 설정 확인):', err?.message || err);
+        process.exit(1); // 필수 설정 누락/로드 실패 → 서버 기동 중단
+    });
 httpServer.on('close', () => {
     logger.info('server down');
     scheduleManger.close();

@@ -111,7 +111,10 @@ const CustomerEtc = new CustomerEtcSchema('customerEtc', {
     pc: {type: [pcSchema]},
     version_control: {type: versionControlSchema, default: () => ({})},
     ssh: {type: [sshSchema]},
-    info: {type: infoSchema, default: () => ({data: {}})}
+    info: {type: infoSchema, default: () => ({data: {}})},
+    // 챗봇 keyword 검색용 평문(문서 전체를 펼친 사본). insert/update 시 buildSearchText로 자동 생성.
+    // ⚠️ 비밀번호/OTP시크릿/이력은 제외돼 저장됨 (외부 LLM 유출 방지) — src/utils/searchText.ts 참고
+    searchText: {type: String}
 });
 
 export {CustomerEtc};

@@ -16,6 +16,7 @@
  */
 import axios from 'axios';
 import {GoogleAuth} from 'google-auth-library';
+import logger from '../../../utils/logger.js';
 import type {ChatMessage, ChatOptions, ChatProvider, EmbeddingProvider, EmbeddingPurpose, ToolExecutor, ToolFunctionSpec} from '../types.js';
 
 /** 함수호출 루프 무한방지 상한 (도구 호출 → 결과 반영 → 재호출 최대 횟수) */
@@ -27,7 +28,40 @@ const MAX_TOOL_STEPS = 5;
  *    (LLMFactory 가 DB(SystemSettings)에서 읽은 값을 넘겨줄 수 있게 하기 위함)
  */
 function buildBase(projectId: string, location: string): string {
-    return `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models`;
+    // 지역 엔드포인트: {location}-aiplatform.googleapis.com
+    // global 엔드포인트: 리전 접두사 없이 aiplatform.googleapis.com (경로의 locations/global 은 그대로)
+    // → gemini-3.x 등 신형 모델은 us-central1 미지원, global 엔드포인트로만 호출 가능한 경우가 있음.
+    const host = location === 'global' ? 'aiplatform.googleapis.com' : `${location}-aiplatform.googleapis.com`;
+    return `https://${host}/v1/projects/${projectId}/locations/${location}/publishers/google/models`;
+}
+
+/**
+ * 모델별 thinking(사고) 설정.
+ * Gemini 2.5/3.x 는 thinking이 기본 ON이고, 그 사고 토큰이 maxOutputTokens 예산을 함께 소모한다.
+ * → 예산이 작으면 사고가 다 써버려 "빈 응답"이 나온다. RAG 챗봇은 무거운 추론이 불필요하므로 최소화한다.
+ *  - Gemini 3.x : thinkingLevel (MINIMAL/LOW/...) — 일부 모델은 완전 비활성이 안 되어 LOW 로 낮춤
+ *  - Gemini 2.5 등 : thinkingBudget=0 으로 사고 비활성
+ * ⚠️ thinkingLevel 과 thinkingBudget 은 한 요청에 동시 사용 불가.
+ */
+function thinkingConfigFor(model: string): Record<string, any> {
+    return /gemini-3/i.test(model) ? {thinkingLevel: 'LOW'} : {thinkingBudget: 0};
+}
+
+/**
+ * generateContent 호출 래퍼. 실패 시 Vertex가 준 "진짜 오류 본문"을 로깅한 뒤 그대로 다시 throw.
+ * (axios 기본 메시지 "Request failed with status code 400" 만으론 원인을 알 수 없어서 —
+ *  예: gemini-3.x 의 thought_signature 누락, contents 역할 비-교대(alternation) 위반, 빈 parts 등)
+ */
+async function postGenerate(url: string, body: any, token: string): Promise<any> {
+    const headers = {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'};
+    try {
+        return await axios.post(url, body, {headers, timeout: 60000});
+    } catch (e: any) {
+        const status = e?.response?.status;
+        const detail = e?.response?.data;
+        logger.error(`[Vertex] generateContent 실패 (status=${status}): ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`);
+        throw e;
+    }
 }
 
 // google-auth-library가 토큰을 캐시·자동 갱신해줌 (1시간 유효)
@@ -66,17 +100,19 @@ export class VertexChatProvider implements ChatProvider {
             .map((m) => ({role: m.role === 'assistant' ? 'model' : 'user', parts: [{text: m.content}]}));
 
         const model = options.model || this.model;
-        const res = await axios.post(
+        const res = await postGenerate(
             `${this.base}/${model}:generateContent`,
             {
                 ...(systemText ? {systemInstruction: {parts: [{text: systemText}]}} : {}),
                 contents,
                 generationConfig: {
                     temperature: options.temperature ?? 0.2,
-                    maxOutputTokens: options.maxTokens ?? 1024
+                    // thinking이 토큰을 잠식하므로 넉넉히(1024→4096). thinkingConfig로 사고 자체도 최소화.
+                    maxOutputTokens: options.maxTokens ?? 4096,
+                    thinkingConfig: thinkingConfigFor(model)
                 }
             },
-            {headers: {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'}, timeout: 60000}
+            token
         );
         return res.data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
     }
@@ -90,8 +126,12 @@ export class VertexChatProvider implements ChatProvider {
         const token = await getAccessToken();
         const model = options.model || this.model;
         const url = `${this.base}/${model}:generateContent`;
-        const headers = {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'};
-        const generationConfig = {temperature: options.temperature ?? 0.2, maxOutputTokens: options.maxTokens ?? 1024};
+        const generationConfig = {
+            temperature: options.temperature ?? 0.2,
+            // thinking이 토큰을 잠식해 "빈 응답 + 도구 반복"을 유발 → 예산 상향(1024→4096) + 사고 최소화
+            maxOutputTokens: options.maxTokens ?? 4096,
+            thinkingConfig: thinkingConfigFor(model)
+        };
         const toolConfig = {tools: [{functionDeclarations: tools}]};
 
         // 이전 대화(history)를 먼저 깔고, 그 뒤에 현재 질문 → functionCall/functionResponse 가 쌓임
@@ -102,11 +142,7 @@ export class VertexChatProvider implements ChatProvider {
         const contents: any[] = [...historyContents, {role: 'user', parts: [{text: userText}]}];
 
         for (let step = 0; step < MAX_TOOL_STEPS; step++) {
-            const res = await axios.post(
-                url,
-                {systemInstruction: {parts: [{text: systemText}]}, contents, generationConfig, ...toolConfig},
-                {headers, timeout: 60000}
-            );
+            const res = await postGenerate(url, {systemInstruction: {parts: [{text: systemText}]}, contents, generationConfig, ...toolConfig}, token);
             const parts: any[] = res.data.candidates?.[0]?.content?.parts ?? [];
             const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
 
@@ -118,8 +154,12 @@ export class VertexChatProvider implements ChatProvider {
                     .trim();
             }
 
-            // 모델의 함수호출 턴을 대화에 기록
-            contents.push({role: 'model', parts: calls.map((fc: any) => ({functionCall: fc}))});
+            // 모델의 함수호출 턴을 "응답 parts 그대로" 기록한다.
+            // ⚠️ Gemini 3.x는 functionCall에 thoughtSignature(사고 서명)를 붙여 보내는데,
+            //    이걸 떼고 functionCall만 재구성하면 다음 요청에서
+            //    "Function call ... is missing a thought_signature" 400 이 난다.
+            //    → map으로 새로 만들지 말고 원본 parts를 그대로 되돌려 서명을 보존한다. (2.5 이하엔 무해)
+            contents.push({role: 'model', parts});
 
             // 각 호출 실행 → functionResponse 로 되돌려줌 (response 는 반드시 객체여야 함)
             const responseParts = [];
@@ -136,7 +176,7 @@ export class VertexChatProvider implements ChatProvider {
         }
 
         // 상한 도달 → 도구 없이 마지막으로 한 번 더 물어서 텍스트 답변을 강제
-        const finalRes = await axios.post(url, {systemInstruction: {parts: [{text: systemText}]}, contents, generationConfig}, {headers, timeout: 60000});
+        const finalRes = await postGenerate(url, {systemInstruction: {parts: [{text: systemText}]}, contents, generationConfig}, token);
         return (finalRes.data.candidates?.[0]?.content?.parts ?? [])
             .map((p: any) => p.text ?? '')
             .join('')

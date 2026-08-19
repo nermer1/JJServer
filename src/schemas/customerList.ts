@@ -5,6 +5,7 @@ import {CustomerEtc} from './customerEtc.js';
 import mongoose, {Schema} from 'mongoose';
 import {flatten} from 'flat';
 import logger from '../utils/logger.js';
+import {buildSearchText} from '../utils/searchText.js';
 
 class CustomerSchema extends CommonSchema {
     constructor(schemaName: string, options = {}) {
@@ -48,6 +49,8 @@ class CustomerSchema extends CommonSchema {
                 const etcData = params.data.tableData[0].etc;
                 etcData._id = returnData[0]._id;
                 etcData.code = returnData[0].code;
+                // 챗봇 keyword 검색용 평문 갱신 (비번/시크릿/이력 제외) — 저장 시점에 항상 최신 유지
+                etcData.searchText = buildSearchText(etcData);
                 await CustomerEtc.model.create([etcData], {session});
 
                 const findParams: DBParamsType = {
@@ -102,6 +105,8 @@ class CustomerSchema extends CommonSchema {
 
                 etcData._id = dataId;
                 etcData.code = inputData.code;
+                // 챗봇 keyword 검색용 평문 갱신 (비번/시크릿/이력 제외) — 시트 수정돼도 여기서 최신화
+                etcData.searchText = buildSearchText(etcData);
 
                 // 미들웨어가 주입한 option 조건 병합
                 const query: any = {_id: dataId, ...option};

@@ -56,14 +56,16 @@ export const AppSettingsSchema = {
 
     // ── Vertex (인증은 GOOGLE_APPLICATION_CREDENTIALS(env)) ──
     VERTEX_PROJECT_ID: {desc: 'Vertex GCP 프로젝트 ID'},
-    VERTEX_LOCATION: {default: 'us-central1', desc: 'Vertex 리전'},
-    VERTEX_CHAT_MODEL: {default: 'gemini-2.5-flash', desc: 'Vertex 채팅 모델'},
+    VERTEX_LOCATION: {default: 'us-central1', desc: 'Vertex 기본 리전 (임베딩·챗 공통 기본값)'},
+    VERTEX_CHAT_LOCATION: {default: 'global', desc: 'Vertex 채팅 전용 리전 override (예: global). 비우면 VERTEX_LOCATION 사용'},
+    VERTEX_CHAT_MODEL: {default: 'gemini-3.5-flash', desc: 'Vertex 채팅 모델'},
     VERTEX_EMBED_MODEL: {default: 'text-multilingual-embedding-002', desc: 'Vertex 임베딩 모델'},
 
     // ── RAG / 벡터 ──
     RAG_COLLECTION: {default: 'rag_vectors', desc: '벡터 저장 컬렉션'},
     RAG_INDEX: {default: 'rag_vector_index', desc: 'Atlas 벡터 인덱스 이름'},
     RAG_EMBED_DIM: {default: '768', desc: '임베딩 차원 (인덱스 numDimensions와 일치)'},
+    RAG_MIN_SCORE: {default: '0', desc: '벡터검색 최소 유사도(0~1). 이 값 미만 결과는 버림(무관한 질문 환각 방지). 0=끄기. 로그의 score 보고 튜닝'},
 
     // ── Langfuse ──
     LANGFUSE_HOST: {desc: 'Langfuse self-host 호스트'},
@@ -105,4 +107,3 @@ export type SettingKey = keyof typeof AppSettingsSchema;
 export const AppSettings = Object.fromEntries(Object.keys(AppSettingsSchema).map((k) => [k, k])) as {
     readonly [K in SettingKey]: K;
 };
-

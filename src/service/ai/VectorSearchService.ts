@@ -6,6 +6,7 @@
 import MongoDB from '../../db/MongoDB.js';
 import {AppSettings} from '../../constants/appSettings.js';
 import SystemSettingsCacheService from '../SystemSettingsCacheService.js';
+import logger from '../../utils/logger.js';
 
 export interface VectorHit {
     source: string;
@@ -17,6 +18,8 @@ export interface VectorHit {
 export interface VectorSearchOptions {
     topK?: number;
     source?: string; // 특정 source(예: 'interviewQuiz', 'wiki')만 검색
+    /** 최소 유사도. 이 값 미만 결과는 버린다. 미지정 시 RAG_MIN_SCORE 설정값(기본 0=끔). */
+    minScore?: number;
 }
 
 class VectorSearchService {
@@ -43,6 +46,20 @@ class VectorSearchService {
             .collection(targetCollection)
             .aggregate([{$vectorSearch: vectorStage}, {$project: {_id: 0, source: 1, text: 1, metadata: 1, score: {$meta: 'vectorSearchScore'}}}])
             .toArray();
+
+        // 최소 유사도(임계값): 미지정 시 RAG_MIN_SCORE 설정값(기본 0=끔).
+        const minScore = options.minScore ?? (Number(SystemSettingsCacheService.resolve(AppSettings.RAG_MIN_SCORE)) || 0);
+
+        // 점수 로깅 — 임계값 튜닝용. 무관한 질문이 어떤 점수대로 걸리는지 여기서 확인한다.
+        logger.info(`[VectorSearch] top${topK} scores=[${rows.map((r) => (r.score ?? 0).toFixed(3)).join(', ')}] minScore=${minScore}`);
+
+        if (minScore > 0) {
+            const filtered = rows.filter((r) => (r.score ?? 0) >= minScore);
+            if (filtered.length < rows.length) {
+                logger.info(`[VectorSearch] 임계값 컷: ${rows.length}건 → ${filtered.length}건 (< ${minScore} 제거)`);
+            }
+            return filtered as VectorHit[];
+        }
 
         return rows as VectorHit[];
     }

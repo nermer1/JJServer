@@ -37,7 +37,12 @@ export class LLMFactory {
                 // 나머지 설정값(모델·프로젝트·리전)은 DB(SystemSettings) → env fallback 으로 조회.
                 chatModel = SystemSettingsCacheService.resolve(AppSettings.VERTEX_CHAT_MODEL);
                 const projectId = SystemSettingsCacheService.resolve(AppSettings.VERTEX_PROJECT_ID);
-                const location = SystemSettingsCacheService.resolve(AppSettings.VERTEX_LOCATION);
+                // 챗 전용 리전 override(예: global) → 없으면 공통 VERTEX_LOCATION 사용.
+                // 신형 모델(gemini-3.x 등)은 us-central1 미지원이라 global 엔드포인트가 필요한 경우가 있어 분리한다.
+                // (임베딩은 계속 VERTEX_LOCATION을 써서 기존 벡터와 리전/모델을 유지)
+                const location =
+                    SystemSettingsCacheService.resolve(AppSettings.VERTEX_CHAT_LOCATION) ||
+                    SystemSettingsCacheService.resolve(AppSettings.VERTEX_LOCATION);
                 return new VertexChatProvider(chatModel, projectId, location);
             default:
                 throw new Error(`[LLMFactory] 지원하지 않는 chat provider: ${provider}`);

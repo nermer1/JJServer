@@ -2,7 +2,12 @@
  * ChatBlocks - RAG 챗봇 답변용 슬랙 블록
  */
 export const ChatBlocks = {
-    buildAnswerBlocks(question: string, answer: string, sources?: Array<{source: string; score: number; preview: string}>): any[] {
+    buildAnswerBlocks(
+        question: string,
+        answer: string,
+        sources?: Array<{source: string; score: number; preview: string}>,
+        shareValue?: string
+    ): any[] {
         const blocks: any[] = [
             {
                 type: 'section',
@@ -26,6 +31,24 @@ export const ChatBlocks = {
         //     });
         // }
         // ▲▲▲ 여기까지 ▲▲▲
+
+        // "채널에 공유" 버튼 — 누르면 개인용(ephemeral) 답변을 채널 전체(in_channel)로 재게시.
+        // value에 답변(JSON)을 직접 실어 payload로 왕복시킨다(ephemeral은 원본 블록을 안 돌려주므로).
+        // shareValue 없으면 버튼 미부착. 공유된(재구성) 메시지도 shareValue 없이 불러 버튼이 빠진다.
+        if (shareValue) {
+            blocks.push({
+                type: 'actions',
+                elements: [
+                    {
+                        type: 'button',
+                        text: {type: 'plain_text', text: '📢 채널에 공유', emoji: true},
+                        action_id: 'share_chat',
+                        value: shareValue,
+                        style: 'primary'
+                    }
+                ]
+            });
+        }
 
         return blocks;
     }
